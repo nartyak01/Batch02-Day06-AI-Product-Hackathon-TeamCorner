@@ -1,0 +1,19 @@
+specialty_id,name,description,keywords,active
+spec_emergency,Cấp cứu,Sàng lọc và xử trí các triệu chứng nguy hiểm cần hỗ trợ khẩn,"cấp cứu;khó thở;đau ngực;ngất;co giật;chảy máu;tai nạn;đột quỵ;sốt cao",true
+spec_cardiology,Trung tâm Tim mạch,Tư vấn các vấn đề tim mạch và huyết áp,"tim;đau ngực;hồi hộp;khó thở;huyết áp;mạch;choáng",true
+spec_orthopedics,Chấn thương chỉnh hình - Y học thể thao,Khám xương khớp chấn thương và vận động,"xương;khớp;đau lưng;đau gối;chấn thương;té ngã;bong gân;thể thao",true
+spec_pediatrics,Trung tâm Nhi,Khám và tư vấn sức khỏe trẻ em,"trẻ em;bé;sốt;ho;phát ban;tiêu chảy;nhi;khóc",true
+spec_oncology,Trung tâm Ung bướu,Tư vấn tầm soát và điều trị ung bướu,"u;bướu;ung thư;tầm soát;hạch;sụt cân;bất thường",true
+spec_digestive,Tiêu hóa - Gan mật,Khám tiêu hóa gan mật dạ dày đại tràng,"đau bụng;tiêu chảy;táo bón;buồn nôn;nôn;dạ dày;gan;mật;ợ chua;đi ngoài",true
+spec_allergy,Miễn dịch - Dị ứng,Khám dị ứng miễn dịch mề đay hen,"dị ứng;mẩn ngứa;mề đay;phát ban;hen;khò khè;sưng môi",true
+spec_regenerative,Trung tâm Y học Tái tạo và Trị liệu Tế bào,Tư vấn y học tái tạo và trị liệu tế bào,"tế bào;tái tạo;trị liệu;phục hồi",true
+spec_women,Trung tâm sức khỏe phụ nữ,Khám sản phụ khoa và sức khỏe nữ giới,"phụ nữ;phụ khoa;kinh nguyệt;mang thai;thai;sản;đau bụng dưới",true
+spec_general,Sức khoẻ tổng quát,Khám tổng quát và sàng lọc ban đầu,"tổng quát;mệt mỏi;khám sức khỏe;tầm soát;không rõ;đau đầu;kiểm tra",true
+spec_stemcell,Viện nghiên cứu Tế bào gốc và Công nghệ Gen,Tư vấn tế bào gốc và công nghệ gen,"tế bào gốc;gen;di truyền;xét nghiệm gen",true
+spec_vaccine,Trung tâm Vacxin,Tư vấn và tiêm chủng,"vaccine;vacxin;tiêm chủng;tiêm phòng;cúm;hpv;viêm gan",true
+spec_traditional,Trung tâm Y Học Cổ Truyền Vinmec - Sao Phương Đông,Khám và điều trị y học cổ truyền,"y học cổ truyền;đông y;châm cứu;bấm huyệt;đau mỏi",true
+spec_breast,Trung tâm Vú,Tầm soát và khám tuyến vú,"vú;tuyến vú;đau vú;u vú;tiết dịch vú;tầm soát vú",true
+spec_neurology,Thần kinh,Khám thần kinh đau đầu chóng mặt rối loạn vận động,"đau đầu;chóng mặt;tê bì;run;liệt;mất ngủ;động kinh;thần kinh",true
+spec_mental,Trung tâm chăm sóc sức khỏe tinh thần tích hợp,Tư vấn sức khỏe tinh thần và giấc ngủ,"lo âu;trầm cảm;stress;mất ngủ;tinh thần;hoảng loạn;căng thẳng",true
+spec_dental,Nha khoa Vinmec-View Premium,Khám răng hàm mặt và nha khoa,"răng;nướu;đau răng;sâu răng;nha khoa;niềng răng;hàm",true
+spec_pharmacy,Khối Dược,Tư vấn sử dụng thuốc an toàn,"thuốc;dị ứng thuốc;tác dụng phụ;liều dùng;dược;tương tác thuốc",true

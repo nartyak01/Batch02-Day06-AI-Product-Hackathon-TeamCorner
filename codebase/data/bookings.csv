@@ -1,0 +1,4 @@
+ticket_id,created_at,name,phone,email,dob,facility_id,specialty_id,doctor_id,slot_id,symptom_summary,status,notes,updated_at
+VIN-45683860,2026-06-04T04:01:23.860Z,Nguyễn Văn A,0123124994,mail@example.com,1980-12-01,fac_times_city,spec_pediatrics,doc_pediatrics_01,slot_013,"Assistant: Rất tiếc khi nghe bé đang không khỏe. Để mình hỗ trợ tốt nhất, bạn cho mình biết thêm bé bao nhiêu tuổi và bạn muốn đưa bé đi khám tại cơ sở Vinmec nào (ví dụ: Hà Nội, TP.HCM, Đà Nẵng...)?
+
+*Tóm tắt: Trẻ em sốt và ho từ tối qua, cần tư vấn chuyên khoa Nhi.*",DRAFT,None,2026-06-04T04:01:23.860Z

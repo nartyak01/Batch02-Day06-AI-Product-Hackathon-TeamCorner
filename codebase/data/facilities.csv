@@ -1,0 +1,11 @@
+facility_id,name,city,district,address,active
+fac_times_city,Vinmec Times City,Hà Nội,Hai Bà Trưng,458 Minh Khai,true
+fac_central_park,Vinmec Central Park,TP. Hồ Chí Minh,Bình Thạnh,208 Nguyễn Hữu Cảnh,true
+fac_smart_city,Vinmec Smart City,Hà Nội,Nam Từ Liêm,Đại lộ Thăng Long,true
+fac_da_nang,Vinmec Đà Nẵng,Đà Nẵng,Hải Châu,Đường 30/4,true
+fac_nha_trang,Vinmec Nha Trang,Khánh Hòa,Nha Trang,42A Trần Phú,true
+fac_hai_phong,Vinmec Hải Phòng,Hải Phòng,Lê Chân,Võ Nguyên Giáp,true
+fac_ha_long,Vinmec Hạ Long,Quảng Ninh,Hạ Long,10A Lê Thánh Tông,true
+fac_phu_quoc,Vinmec Phú Quốc,Kiên Giang,Phú Quốc,Bãi Dài,true
+fac_can_tho,Vinmec Cần Thơ,Cần Thơ,Ninh Kiều,209 Đường 30/4,true
+fac_ocean_park_2,Vinmec Ocean Park 2,Hưng Yên,Văn Giang,Vinhomes Ocean Park 2,true
