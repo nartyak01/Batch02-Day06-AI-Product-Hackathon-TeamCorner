@@ -272,12 +272,14 @@ Kỳ vọng:
 
 ## 14. Phân công
 
-| Thành viên | Nhóm việc | Trách nhiệm chính | Deliverable |
+Mỗi người chỉ làm phần của mình. Tích hợp chỉ đi qua data contract, không kéo chéo sang việc của người khác.
+
+| Thành viên | Nhóm việc | Nối với ai / contract chính | Deliverable |
 |---|---|---|---|
-|Lê Đàm Quân| UI/UX | Dựng giao diện chat, card gợi ý khoa/slot, form đặt lịch, tab lịch đã đặt, loading/error/warning states | Prototype nhìn được và chạy được end-to-end trên UI |
-|Nguyễn Tiến Đạt| Call API / Agent | Tích hợp Gemini, viết system prompt, gửi message đã qua guard, nhận response có cấu trúc, xử lý lỗi API/fallback mock | Agent trả `symptomSummary`, `confidence`, `redFlagRisk`, `suggestedSpecialties` |
-|Trần Nguyễn Đăng Khoa| Tool 1 - Medical routing tools | Chuẩn bị mock data y tế trong code, kiểm tra red flag bằng rule trong code, gợi ý chuyên khoa, lấy slot trống, xử lý override khoa | `suggestSpecialty`, `getAvailableSlots`, mock constants, Tạo data mẫu dựa theo các trường đã defined|
-|Trần Hoàng Nam| Tool 2 - Booking/privacy tools | Chặn PII trong chat, tạo booking draft, submit booking mock, lưu/xem/sửa lịch đã đặt, đảm bảo PII không quay lại LLM | `piiGuard`, `createBookingDraft`, `submitBooking`, `listBookings`, `updateBooking` |
+| Lê Đàm Quân | UI/UX | Nhận response có cấu trúc từ API/Agent và booking state từ Tool 2 | Giao diện chat, card gợi ý khoa/slot, form đặt lịch, tab lịch đã đặt, loading/error/warning states |
+| Nguyễn Tiến Đạt | Call API / Agent | Nhận message đã qua guard từ UI; trả structured output cho UI và Tool 1 | Gemini flow, system prompt, `symptomSummary`, `confidence`, `redFlagRisk`, `suggestedSpecialties` |
+| Trần Nguyễn Đăng Khoa | Tool 1 - Medical routing tools | Nhận `symptomSummary` từ Agent; trả specialty/slot suggestion cho UI | Mock constants trong code, `suggestSpecialty`, `getAvailableSlots`, rule xử lý red flag/override |
+| Trần Hoàng Nam | Tool 2 - Booking/privacy tools | Nối với UI/UX của Lê Đàm Quân; nhận `bookingDraft`, trả `ticketId` và booking list cho UI | `piiGuard`, `createBookingDraft`, `submitBooking`, `listBookings`, `updateBooking`, lưu lịch sử đặt chỗ |
 
 ## 15. Demo script 3 phút
 
