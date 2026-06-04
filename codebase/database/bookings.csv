@@ -1,0 +1,2 @@
+ticket_id,created_at,name,phone,email,dob,facility_id,specialty_id,doctor_id,slot_id,symptom_summary,status,notes,updated_at
+VMC-20260604-0001,2026-06-04T03:59:51Z,Nguyen Van Test,0901000002,test@example.com,2000-01-01,times_city,tim_mach,bs_tim_mach_01,slot_tim_mach_01_01,dau nguc am i,confirmed,,2026-06-04T03:59:51Z

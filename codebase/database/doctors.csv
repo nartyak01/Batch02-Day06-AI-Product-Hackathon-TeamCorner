@@ -1,0 +1,55 @@
+doctor_id,name,title,specialty_id,facility_id,active,availability_status
+bs_cap_cuu_01,BS. Nguyễn Văn An,Bác sĩ,cap_cuu,times_city,true,available
+bs_cap_cuu_02,BS. Trần Thị Bích,Thạc sĩ - Bác sĩ,cap_cuu,smart_city,true,full
+bs_cap_cuu_03,BS. Lê Hữu Cường,BS.CKI,cap_cuu,times_city,true,available
+bs_tim_mach_01,BS. Phạm Minh Đức,Bác sĩ,tim_mach,times_city,true,available
+bs_tim_mach_02,BS. Hoàng Thị Giang,Thạc sĩ - Bác sĩ,tim_mach,smart_city,true,full
+bs_tim_mach_03,BS. Vũ Quốc Hải,BS.CKI,tim_mach,times_city,true,available
+bs_ung_buou_01,BS. Đặng Thị Hạnh,Bác sĩ,ung_buou,times_city,true,available
+bs_ung_buou_02,BS. Bùi Văn Khải,Thạc sĩ - Bác sĩ,ung_buou,smart_city,true,full
+bs_ung_buou_03,BS. Đỗ Thị Lan,BS.CKI,ung_buou,times_city,true,available
+bs_mien_dich_di_ung_01,BS. Ngô Minh Long,Bác sĩ,mien_dich_di_ung,times_city,true,available
+bs_mien_dich_di_ung_02,BS. Nguyễn Thị Mai,Thạc sĩ - Bác sĩ,mien_dich_di_ung,smart_city,true,full
+bs_mien_dich_di_ung_03,BS. Trần Văn Nam,BS.CKI,mien_dich_di_ung,times_city,true,available
+bs_tieu_hoa_gan_mat_01,BS. Lê Thị Oanh,Bác sĩ,tieu_hoa_gan_mat,times_city,true,available
+bs_tieu_hoa_gan_mat_02,BS. Phạm Đức Phúc,Thạc sĩ - Bác sĩ,tieu_hoa_gan_mat,smart_city,true,full
+bs_tieu_hoa_gan_mat_03,BS. Hoàng Thị Quỳnh,BS.CKI,tieu_hoa_gan_mat,times_city,true,available
+bs_nhi_01,BS. Vũ Văn Sơn,Bác sĩ,nhi,times_city,true,available
+bs_nhi_02,BS. Đặng Thị Thảo,Thạc sĩ - Bác sĩ,nhi,smart_city,true,full
+bs_nhi_03,BS. Bùi Minh Tuấn,BS.CKI,nhi,times_city,true,available
+bs_suc_khoe_phu_nu_01,BS. Đỗ Thị Uyên,Bác sĩ,suc_khoe_phu_nu,times_city,true,available
+bs_suc_khoe_phu_nu_02,BS. Ngô Văn Vinh,Thạc sĩ - Bác sĩ,suc_khoe_phu_nu,smart_city,true,full
+bs_suc_khoe_phu_nu_03,BS. Nguyễn Thị Xuân,BS.CKI,suc_khoe_phu_nu,times_city,true,available
+bs_suc_khoe_tong_quat_01,BS. Trần Hữu Yên,Bác sĩ,suc_khoe_tong_quat,times_city,true,available
+bs_suc_khoe_tong_quat_02,BS. Lê Văn Bảo,Thạc sĩ - Bác sĩ,suc_khoe_tong_quat,smart_city,true,full
+bs_suc_khoe_tong_quat_03,BS. Phạm Thị Chi,BS.CKI,suc_khoe_tong_quat,times_city,true,available
+bs_nha_khoa_view_01,BS. Hoàng Đức Dũng,Bác sĩ,nha_khoa_view,times_city,true,available
+bs_nha_khoa_view_02,BS. Vũ Thị Hương,Thạc sĩ - Bác sĩ,nha_khoa_view,smart_city,true,full
+bs_nha_khoa_view_03,BS. Đặng Văn Kiên,BS.CKI,nha_khoa_view,times_city,true,available
+bs_y_hoc_co_truyen_01,BS. Bùi Thị Linh,Bác sĩ,y_hoc_co_truyen,times_city,true,available
+bs_y_hoc_co_truyen_02,BS. Đỗ Quốc Mạnh,Thạc sĩ - Bác sĩ,y_hoc_co_truyen,smart_city,true,full
+bs_y_hoc_co_truyen_03,BS. Ngô Thị Nga,BS.CKI,y_hoc_co_truyen,times_city,true,available
+bs_tai_tao_te_bao_01,BS. Nguyễn Văn Phong,Bác sĩ,tai_tao_te_bao,times_city,true,available
+bs_tai_tao_te_bao_02,BS. Trần Thị Quyên,Thạc sĩ - Bác sĩ,tai_tao_te_bao,smart_city,true,full
+bs_tai_tao_te_bao_03,BS. Lê Minh Tâm,BS.CKI,tai_tao_te_bao,times_city,true,available
+bs_chan_thuong_the_thao_01,BS. Phạm Thị Vân,Bác sĩ,chan_thuong_the_thao,times_city,true,available
+bs_chan_thuong_the_thao_02,BS. Hoàng Văn Đạt,Thạc sĩ - Bác sĩ,chan_thuong_the_thao,smart_city,true,full
+bs_chan_thuong_the_thao_03,BS. Vũ Thị Hiền,BS.CKI,chan_thuong_the_thao,times_city,true,available
+bs_te_bao_goc_gen_01,BS. Đặng Quốc Hùng,Bác sĩ,te_bao_goc_gen,times_city,true,available
+bs_te_bao_goc_gen_02,BS. Bùi Thị Kim,Thạc sĩ - Bác sĩ,te_bao_goc_gen,smart_city,true,full
+bs_te_bao_goc_gen_03,BS. Đỗ Văn Lộc,BS.CKI,te_bao_goc_gen,times_city,true,available
+bs_vacxin_01,BS. Ngô Thị My,Bác sĩ,vacxin,times_city,true,available
+bs_vacxin_02,BS. Nguyễn Đức Nghĩa,Thạc sĩ - Bác sĩ,vacxin,smart_city,true,full
+bs_vacxin_03,BS. Trần Thị Phượng,BS.CKI,vacxin,times_city,true,available
+bs_vu_01,BS. Lê Văn Quang,Bác sĩ,vu,times_city,true,available
+bs_vu_02,BS. Phạm Thị Sinh,Thạc sĩ - Bác sĩ,vu,smart_city,true,full
+bs_vu_03,BS. Hoàng Minh Thắng,BS.CKI,vu,times_city,true,available
+bs_than_kinh_01,BS. Vũ Thị Trang,Bác sĩ,than_kinh,times_city,true,available
+bs_than_kinh_02,BS. Đặng Văn Uy,Thạc sĩ - Bác sĩ,than_kinh,smart_city,true,full
+bs_than_kinh_03,BS. Bùi Thị Vy,BS.CKI,than_kinh,times_city,true,available
+bs_tam_than_01,BS. Đỗ Hữu Xuân,Bác sĩ,tam_than,times_city,true,available
+bs_tam_than_02,BS. Ngô Thị Yến,Thạc sĩ - Bác sĩ,tam_than,smart_city,true,full
+bs_tam_than_03,BS. Nguyễn Văn Hiếu,BS.CKI,tam_than,times_city,true,available
+bs_duoc_01,BS. Trần Thị Loan,Bác sĩ,duoc,times_city,true,available
+bs_duoc_02,BS. Lê Quốc Thịnh,Thạc sĩ - Bác sĩ,duoc,smart_city,true,full
+bs_duoc_03,BS. Phạm Văn Tùng,BS.CKI,duoc,times_city,true,available
