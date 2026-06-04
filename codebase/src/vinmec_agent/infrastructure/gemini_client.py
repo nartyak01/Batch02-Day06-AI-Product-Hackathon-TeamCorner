@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-import sys
 from typing import Any
 
 from ..application.ports import LLMClient
@@ -180,8 +179,10 @@ User message:
         raise RuntimeError("Gemini response did not include text.")
 
     def _debug_log(self, message: str) -> None:
-        if os.getenv("AGENT_DEBUG") == "1":
-            print(f"[agent-debug] {message}", file=sys.stderr)
+        if os.getenv("AGENT_DEBUG", "").strip() in ("1", "true", "yes"):
+            from src.utils.flow_log import log_event
+
+            log_event("gemini_debug", message=message)
 
 
 def _load_backend_env() -> dict[str, str]:

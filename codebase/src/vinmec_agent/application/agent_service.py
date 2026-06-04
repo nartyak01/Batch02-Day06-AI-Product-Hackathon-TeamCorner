@@ -11,6 +11,8 @@ from ..domain.constants import (
     STATE_READY_FOR_FORM,
     STATE_SUGGESTING_SLOTS,
 )
+from src.utils.flow_log import log_react_step
+
 from ..domain.privacy import detect_pii
 from ..domain.response import base_response, coerce_float
 from ..domain.text import contains_normalized_keyword, normalize_vietnamese
@@ -94,14 +96,16 @@ class BookingAgent:
             )
             action, action_input, planner = self._select_planned_action(plan, react_state)
             observation = self._run_tool_action(action, action_input, react_state)
+            step_summary = observation.get("summary", "ok")
             react_state["trace"].append(
                 {
                     "step": step_index + 1,
                     "planner": planner,
                     "action": action,
-                    "observation": observation.get("summary", "ok"),
+                    "observation": step_summary,
                 }
             )
+            log_react_step(step_index + 1, action, planner, str(step_summary))
 
             final_response = observation.get("final_response")
             if final_response:

@@ -21,4 +21,9 @@ def run_agent_turn(
     history: list[dict[str, Any]] | None = None,
     context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    return get_agent().run_turn(user_message=user_message, history=history, context=context)
+    from src.utils.flow_log import log_agent_request, log_agent_response
+
+    started_at = log_agent_request(user_message, history, context)
+    result = get_agent().run_turn(user_message=user_message, history=history, context=context)
+    log_agent_response(result, started_at=started_at)
+    return result
