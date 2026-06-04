@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VinmecCare AI Agent - Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Fragment+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-body: 'Bricolage Grotesque', 'Segoe UI', sans-serif;
+      --font-mono: 'Fragment Mono', Consolas, monospace;
+      --bg: #f8f3ea;
+      --surface: #fffaf2;
+      --surface2: #efe6d8;
+      --surface3: #e2d4c3;
+      --ink: #24211d;
+      --muted: #665f55;
+      --border: rgba(36, 33, 29, 0.14);
+      --strong-border: rgba(36, 33, 29, 0.28);
+      --terracotta: #b84a22;
+      --teal: #0f766e;
+      --amber: #b7791f;
+      --cranberry: #9f1239;
+      --sage: #567a3b;
+      --dark: #25201a;
+      --white: #fffaf2;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: var(--font-body);
+      color: var(--ink);
+      background-color: var(--bg);
+      overflow-wrap: break-word;
+    }
+
+    .deck {
+      height: 100dvh;
+      overflow-y: auto;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+    }
+
+    .slide {
+      height: 100dvh;
+      scroll-snap-align: start;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(28px, 5vh, 64px) clamp(34px, 7vw, 104px);
+      background-color: rgba(248, 243, 234, 0.92);
+      isolation: isolate;
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity .45s ease, transform .45s ease;
+    }
+    .slide.visible { opacity: 1; transform: none; }
+    .reveal { opacity: 0; transform: translateY(14px); transition: opacity .42s ease, transform .42s ease; }
+    .slide.visible .reveal { opacity: 1; transform: none; }
+    .slide.visible .reveal:nth-child(2) { transition-delay: .08s; }
+    .slide.visible .reveal:nth-child(3) { transition-delay: .16s; }
+    .slide.visible .reveal:nth-child(4) { transition-delay: .24s; }
+    .slide.visible .reveal:nth-child(5) { transition-delay: .32s; }
+
+    h1, h2, h3, p { margin: 0; }
+    .label {
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--terracotta);
+      font-size: clamp(10px, 1.1vw, 13px);
+      margin-bottom: 14px;
+    }
+    .display {
+      font-size: clamp(50px, 9vw, 108px);
+      line-height: .92;
+      letter-spacing: 0;
+      max-width: 980px;
+      font-weight: 800;
+    }
+    .heading {
+      font-size: clamp(30px, 5vw, 56px);
+      line-height: 1.02;
+      letter-spacing: 0;
+      max-width: 1000px;
+      font-weight: 800;
+    }
+    .body {
+      font-size: clamp(17px, 2vw, 24px);
+      line-height: 1.45;
+      color: var(--muted);
+      max-width: 920px;
+    }
+    .mono { font-family: var(--font-mono); }
+    .accent { color: var(--terracotta); }
+    .teal { color: var(--teal); }
+    .amber { color: var(--amber); }
+    .cranberry { color: var(--cranberry); }
+
+    .title-grid {
+      display: grid;
+      grid-template-columns: 1fr minmax(260px, 360px);
+      gap: clamp(28px, 6vw, 80px);
+      align-items: end;
+    }
+    .stamp {
+      border: 2px solid var(--strong-border);
+      background: var(--surface);
+      padding: 24px;
+      min-height: 270px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .stamp .big { font-size: clamp(54px, 8vw, 96px); line-height: .8; color: var(--teal); font-weight: 800; }
+    .rule { height: 2px; background: var(--strong-border); margin: 24px 0; }
+
+    .grid-2, .grid-3, .grid-4 {
+      display: grid;
+      gap: clamp(14px, 2vw, 24px);
+      width: 100%;
+      min-width: 0;
+    }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: clamp(16px, 2.5vw, 28px);
+      min-width: 0;
+    }
+    .card.dark { background: var(--dark); color: var(--white); border-color: rgba(255,250,242,.18); }
+    .card.dark p, .card.dark li { color: #dbcfc0; }
+    .card h3 {
+      font-size: clamp(20px, 2.3vw, 30px);
+      line-height: 1.08;
+      margin-bottom: 10px;
+    }
+    .card p, .card li {
+      font-size: clamp(15px, 1.5vw, 19px);
+      line-height: 1.42;
+      color: var(--muted);
+    }
+    .card ul { margin: 10px 0 0; padding: 0; list-style: none; }
+    .card li { position: relative; padding-left: 18px; margin: 8px 0; }
+    .card li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: .65em;
+      width: 7px;
+      height: 7px;
+      background: currentColor;
+      border-radius: 50%;
+      opacity: .55;
+    }
+
+    .metric {
+      border-top: 5px solid var(--terracotta);
+      min-height: 190px;
+    }
+    .metric strong {
+      display: block;
+      font-size: clamp(42px, 7vw, 76px);
+      line-height: .95;
+      color: var(--teal);
+      margin-bottom: 10px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      min-height: 100dvh;
+      padding: 0;
+    }
+    .panel {
+      padding: clamp(32px, 6vh, 72px) clamp(32px, 5vw, 76px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .panel.left { background: var(--dark); color: var(--white); }
+    .panel.left .body, .panel.left li { color: #dfd2c3; }
+    .panel.right { background: var(--surface2); }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 28px;
+    }
+    .step {
+      position: relative;
+      min-height: 180px;
+      background: var(--surface);
+      border: 1px solid var(--strong-border);
+      border-radius: 8px;
+      padding: 18px;
+    }
+    .step::after {
+      content: "";
+      position: absolute;
+      right: -11px;
+      top: 50%;
+      width: 20px;
+      height: 2px;
+      background: var(--strong-border);
+    }
+    .step:last-child::after { display: none; }
+    .step span {
+      font-family: var(--font-mono);
+      color: var(--terracotta);
+      font-size: 12px;
+    }
+    .step h3 { margin: 12px 0 8px; font-size: clamp(18px, 2vw, 25px); }
+    .step p { color: var(--muted); font-size: clamp(14px, 1.4vw, 17px); line-height: 1.38; }
+
+    .path-row {
+      display: grid;
+      grid-template-columns: 190px 1fr 1fr 1fr;
+      border: 1px solid var(--strong-border);
+      background: var(--surface);
+      margin-top: 14px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .path-row > div {
+      padding: 16px;
+      border-left: 1px solid var(--border);
+      font-size: clamp(14px, 1.5vw, 18px);
+      line-height: 1.35;
+      color: var(--muted);
+    }
+    .path-row > div:first-child {
+      border-left: 0;
+      font-weight: 800;
+      color: var(--ink);
+      background: var(--surface2);
+    }
+
+    .diagram {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(150px, auto));
+      gap: 18px;
+      margin-top: 28px;
+    }
+    .module {
+      background: var(--surface);
+      border: 1px solid var(--strong-border);
+      border-radius: 8px;
+      padding: 20px;
+      position: relative;
+    }
+    .module::before {
+      content: attr(data-id);
+      font-family: var(--font-mono);
+      color: var(--teal);
+      font-size: 12px;
+      display: block;
+      margin-bottom: 12px;
+    }
+    .module h3 { font-size: clamp(19px, 2vw, 26px); margin-bottom: 8px; }
+    .module p { color: var(--muted); line-height: 1.35; font-size: clamp(14px, 1.4vw, 17px); }
+
+    .quote {
+      max-width: 1080px;
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 1.05;
+      font-weight: 800;
+    }
+    .quote small {
+      display: block;
+      margin-top: 26px;
+      font-size: clamp(15px, 1.4vw, 18px);
+      font-family: var(--font-mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 400;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--strong-border);
+      overflow: hidden;
+      border-radius: 8px;
+      font-size: clamp(14px, 1.45vw, 18px);
+    }
+    .table th {
+      text-align: left;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 12px;
+      background: var(--dark);
+      color: var(--white);
+      padding: 14px;
+    }
+    .table td {
+      padding: 14px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      vertical-align: top;
+      line-height: 1.35;
+    }
+    .table td:first-child { color: var(--ink); font-weight: 800; }
+
+    .status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--dark);
+      background: var(--surface3);
+      white-space: nowrap;
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 4px;
+      background: var(--terracotta);
+      z-index: 100;
+      width: 0;
+    }
+    .counter {
+      position: fixed;
+      bottom: 16px;
+      right: 18px;
+      z-index: 100;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      background: rgba(255,250,242,.84);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+    .dots {
+      position: fixed;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 100;
+    }
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      border: 1px solid var(--muted);
+      background: var(--surface);
+      cursor: pointer;
+      opacity: .55;
+    }
+    .dot.active { background: var(--terracotta); border-color: var(--terracotta); opacity: 1; }
+
+    @media (max-width: 900px) {
+      .title-grid, .grid-2, .grid-3, .grid-4, .split, .diagram { grid-template-columns: 1fr; }
+      .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .flow { grid-template-columns: 1fr; }
+      .step { min-height: 110px; }
+      .step::after { display: none; }
+      .path-row { grid-template-columns: 1fr; }
+      .path-row > div { border-left: 0; border-top: 1px solid var(--border); }
+      .path-row > div:first-child { border-top: 0; }
+      .dots { display: none; }
+    }
+
+    @media (max-height: 660px) {
+      .slide { padding-top: 24px; padding-bottom: 24px; }
+      .card { padding: 14px; }
+      .flow { gap: 10px; }
+      .step { min-height: 130px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .slide, .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="deck" id="deck">
+    <section class="slide">
+      <div class="title-grid">
+        <div>
+          <p class="label reveal">Healthcare Track - AI Product Hackathon</p>
+          <h1 class="display reveal">VinmecCare AI Booking Agent</h1>
+          <div class="rule reveal"></div>
+          <p class="body reveal">Từ mô tả triệu chứng trong chat đến gợi ý chuyên khoa, lịch trống và form đặt lịch gần hoàn tất, trong khi thông tin cá nhân được tách khỏi LLM.</p>
+        </div>
+        <aside class="stamp reveal">
+          <div class="big">V</div>
+          <p class="mono">Gemini 3.1 Flash Lite<br>FastAPI + Next.js<br>CSV mock database</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="label reveal">Product Canvas</p>
+      <h2 class="heading reveal">Ý tưởng: AI không thay bác sĩ, AI làm cầu nối đặt lịch thông minh.</h2>
+      <div class="grid-4" style="margin-top:28px">
+        <div class="card metric reveal"><strong>1</strong><p>Người bệnh nhập triệu chứng bằng tiếng Việt tự nhiên.</p></div>
+        <div class="card metric reveal"><strong>2-3</strong><p>AI gợi ý chuyên khoa kèm lý do, không chẩn đoán bệnh.</p></div>
+        <div class="card metric reveal"><strong>0</strong><p>PII đi qua prompt: họ tên, SĐT, email chỉ nhập ở form riêng.</p></div>
+        <div class="card metric reveal"><strong>ID</strong><p>Submit tạo ticket mock và có tab tra cứu/sửa lịch đã đặt.</p></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="label reveal">Pain Points</p>
+      <h2 class="heading reveal">Nỗi đau nằm ở đoạn chuyển từ “tôi bị gì đó” sang “tôi nên đặt khoa nào, giờ nào”.</h2>
+      <div class="grid-3" style="margin-top:28px">
+        <div class="card reveal"><h3>Chat hiện tại chỉ handoff</h3><p>Quan sát flow VinmecCare cho thấy bot hỏi tuổi/cơ sở rồi đưa link hoặc hotline, người dùng vẫn phải tự làm tiếp.</p></div>
+        <div class="card reveal"><h3>Form có nhiều quyết định</h3><p>Cơ sở, khoa, bác sĩ, thời gian và thông tin cá nhân làm người mới dễ chọn sai hoặc bỏ giữa chừng.</p></div>
+        <div class="card reveal"><h3>Rủi ro riêng tư</h3><p>Người dùng có xu hướng paste SĐT/email vào chat. Prototype chặn ở frontend và lọc history trước khi gọi LLM.</p></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="label reveal">Use Cases</p>
+      <h2 class="heading reveal">Các tình huống demo trọng tâm</h2>
+      <div class="grid-2" style="margin-top:28px">
+        <div class="card reveal"><h3>Đặt lịch từ triệu chứng mơ hồ</h3><p>Ví dụ: đau bụng âm ỉ, buồn nôn từ hôm qua, muốn khám ở Times City. Agent hỏi thêm rồi gợi ý khoa và slot.</p></div>
+        <div class="card reveal"><h3>Chọn lại chuyên khoa/cơ sở</h3><p>User không đồng ý với AI, đổi sang khoa khác; UI refresh slot và có thể đánh dấu pending_review.</p></div>
+        <div class="card reveal"><h3>Triệu chứng nguy hiểm</h3><p>Đau ngực, khó thở, choáng: rule red flag chạy trước LLM, không tạo booking thường, chuyển hotline/callback.</p></div>
+        <div class="card reveal"><h3>Quản lý ticket sau khi đặt</h3><p>Tab Ticket cho phép lọc theo mã, tên, SĐT, email, ngày sinh, trạng thái; có thể sửa hoặc hủy ticket.</p></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="label reveal">Agent Architecture</p>
+      <h2 class="heading reveal">Agent dùng ReAct có kiểm soát: rule guard trước, LLM lập kế hoạch, tool layer thực thi.</h2>
+      <div class="diagram reveal">
+        <div class="module" data-id="UI"><h3>Next.js Chat</h3><p>Composer, PII warning, action cards, slot cards, booking form, ticket tab.</p></div>
+        <div class="module" data-id="API"><h3>FastAPI</h3><p>/agent/turn, /tools/*, /form/*, /bookings. Backend giữ biên an toàn.</p></div>
+        <div class="module" data-id="LLM"><h3>Gemini Planner</h3><p>Chọn một action tiếp theo: hỏi thêm, phân tích intake, gợi ý khoa, lấy slot, tạo draft.</p></div>
+        <div class="module" data-id="RULE"><h3>PII + Red Flag</h3><p>Chặn dữ liệu cá nhân và triệu chứng nguy hiểm trước khi vào luồng booking thường.</p></div>
+        <div class="module" data-id="TOOLS"><h3>Medical/Booking Tools</h3><p>suggest_specialty, get_available_slots, create_booking_draft, submit/list/update booking.</p></div>
+        <div class="module" data-id="DATA"><h3>CSV Mock Data</h3><p>facilities, specialties, doctors, slots, bookings; đủ để demo end-to-end trong 1 ngày.</p></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="label reveal">User Flow</p>
+      <h2 class="heading reveal">Luồng chính từ chat đến ticket</h2>
+      <div class="flow reveal">
+        <div class="step"><span>01</span><h3>Intake</h3><p>User mô tả triệu chứng, tuổi/năm sinh, cơ sở mong muốn.</p></div>
+        <div class="step"><span>02</span><h3>Clarify</h3><p>Agent hỏi thêm tối đa 1-2 câu nếu thiếu thời điểm, mức độ, vị trí.</p></div>
+        <div class="step"><span>03</span><h3>Suggest</h3><p>Gợi ý chuyên khoa và lấy slot trống từ mock tools.</p></div>
+        <div class="step"><span>04</span><h3>Decide</h3><p>User chọn slot hoặc override chuyên khoa/cơ sở.</p></div>
+        <div class="step"><span>05</span><h3>Book</h3><p>Form riêng nhập PII, submit ticket, xem/sửa ở tab Ticket.</p></div>
+      </div>
+    </section>
+
+    <section class="slide split">
+      <div class="panel left">
+        <p class="label reveal">AI Đúng Chỗ</p>
+        <h2 class="heading reveal">AI chỉ xử lý phần mơ hồ, không xử lý phần nhạy cảm.</h2>
+        <p class="body reveal" style="margin-top:20px">Đây là augmentation: AI làm rõ triệu chứng và đề xuất hướng đặt lịch. Người dùng vẫn quyết định slot, chuyên khoa và tự nhập thông tin cá nhân ở form không gọi LLM.</p>
+      </div>
+      <div class="panel right">
+        <div class="card reveal"><h3>AI làm</h3><ul><li>Tóm tắt symptom_summary</li><li>Ước lượng confidence</li><li>Rank 2-3 chuyên khoa</li><li>Tạo bookingDraft không PII</li></ul></div>
+        <div class="card reveal" style="margin-top:18px"><h3>AI không làm</h3><ul><li>Không chẩn đoán bệnh</li><li>Không tự submit lịch</li><li>Không yêu cầu họ tên/SĐT/email/CCCD</li><li>Không xử lý red flag như booking thường</li></ul></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="label reveal">4 Paths</p>
+      <h2 class="heading reveal">Bốn đường đi bắt buộc của trải nghiệm</h2>
+      <div class="path-row reveal"><div>Happy case</div><div>Đau bụng + đủ ngữ cảnh</div><div>Gợi ý Tiêu hóa/Gan mật, hiện slot</div><div>Chọn slot, mở form, submit ticket</div></div>
+      <div class="path-row reveal"><div>Failure case</div><div>Đau ngực, khó thở, choáng</div><div>Rule red flag chặn trước LLM</div><div>Không tạo booking thường, chuyển hotline/callback</div></div>
+      <div class="path-row reveal"><div>Low confidence</div><div>Triệu chứng quá ngắn hoặc thiếu tuổi/cơ sở</div><div>Agent hỏi thêm tối đa 1-2 câu</div><div>Không đoán quá tự tin</div></div>
+      <div class="path-row reveal"><div>Correction</div><div>User đổi khoa/cơ sở hoặc nhập PII trong chat</div><div>Refresh slot hoặc chặn gửi message</div><div>Booking draft cập nhật, PII đi qua form riêng</div></div>
+    </section>
+
+    <section class="slide">
+      <p class="label reveal">Happy Path Demo</p>
+      <h2 class="heading reveal">Một câu triệu chứng trở thành lịch khám có ticket.</h2>
+      <div class="grid-3" style="margin-top:28px">
+        <div class="card dark reveal"><h3>Input</h3><p>“Tôi đau bụng và buồn nôn từ hôm qua, muốn khám ở Times City.”</p></div>
+        <div class="card reveal"><h3>Agent Output</h3><p>symptomSummary, confidence, suggestedSpecialties, slots, bookingDraft.</p></div>
+        <div class="card reveal"><h3>UI Output</h3><p>Slot card, nút xác nhận, form pre-fill cơ sở/khoa/bác sĩ/giờ/lý do khám.</p></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="label reveal">Failure + Low Confidence</p>
+      <h2 class="heading reveal">Thiết kế giảm rủi ro bằng cách biết khi nào phải dừng hoặc hỏi thêm.</h2>
+      <div class="grid-2" style="margin-top:28px">
+        <div class="card reveal"><h3 class="cranberry">Red flag</h3><p>Keyword như đau ngực, khó thở, ngất, co giật được rule phát hiện trước. Agent trả escalation, hotline/callback, không tạo bookingDraft thường.</p></div>
+        <div class="card reveal"><h3 class="amber">Low confidence</h3><p>Nếu thiếu duration, severity, location, associated symptoms, age hoặc facility, agent hỏi thêm tối đa 1-2 câu rồi mới routing.</p></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="label reveal">Correction Path</p>
+      <h2 class="heading reveal">Sửa sai là một phần của sản phẩm, không phải ngoại lệ.</h2>
+      <table class="table reveal" style="margin-top:28px">
+        <thead><tr><th>Tình huống</th><th>Cơ chế</th><th>Tác dụng</th></tr></thead>
+        <tbody>
+          <tr><td>User đổi chuyên khoa</td><td>Select khoa/cơ sở trong action card, gọi /api/slots</td><td>Slot refresh theo lựa chọn mới, draft ghi notes override</td></tr>
+          <tr><td>User chọn slot</td><td>confirm_slot rồi render_booking_form</td><td>Người dùng vẫn quyết định trước khi nhập PII</td></tr>
+          <tr><td>User paste PII vào chat</td><td>Frontend regex disable nút gửi; backend cũng detect_pii</td><td>Không gọi LLM, không lặp lại dữ liệu nhạy cảm</td></tr>
+          <tr><td>User muốn sửa sau đặt</td><td>PATCH /bookings/{ticket_id}</td><td>Sửa liên hệ/trạng thái mà không quay lại agent</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="slide">
+      <p class="label reveal">Problem-Solution Fit</p>
+      <h2 class="heading reveal">Giả thuyết thuyết phục: giảm ma sát đúng ở điểm người dùng bị kẹt nhất.</h2>
+      <div class="grid-3" style="margin-top:28px">
+        <div class="card reveal"><h3>Evidence</h3><p>Ảnh spec cho thấy flow VinmecCare hiện tại chuyển qua link/hotline; form thật có nhiều trường cần chọn thủ công.</p></div>
+        <div class="card reveal"><h3>Hypothesis</h3><p>Nếu AI biến triệu chứng thành gợi ý khoa/slot có giải thích, người dùng ít phải tự mò và ít bỏ cuộc hơn.</p></div>
+        <div class="card reveal"><h3>Prototype Proof</h3><p>Luồng chạy thật: Gemini/fallback rules + mock tools + CSV booking + UI action cards. Không chỉ là mockup tĩnh.</p></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="label reveal">UI/UX</p>
+      <h2 class="heading reveal">Giao diện trực giác vì quyết định được đưa ra đúng lúc, đúng dạng.</h2>
+      <div class="grid-4" style="margin-top:28px">
+        <div class="card reveal"><h3>Chat-first</h3><p>Người dùng bắt đầu bằng ngôn ngữ tự nhiên thay vì phải hiểu cấu trúc bệnh viện.</p></div>
+        <div class="card reveal"><h3>Action cards</h3><p>Slot, xác nhận, form và escalation xuất hiện ngay dưới câu trả lời liên quan.</p></div>
+        <div class="card reveal"><h3>Guard rõ ràng</h3><p>PII warning xuất hiện trước khi gửi, microcopy giải thích vì sao.</p></div>
+        <div class="card reveal"><h3>Ticket tab</h3><p>Tra cứu/sửa/hủy lịch đã đặt trong cùng app, không mất ngữ cảnh demo.</p></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="label reveal">Practical Implication</p>
+      <h2 class="heading reveal">Nếu mở rộng thật, đây là lớp triage đặt lịch an toàn trước hệ thống booking production.</h2>
+      <div class="grid-3" style="margin-top:28px">
+        <div class="card reveal"><h3>Cho bệnh viện</h3><p>Giảm tải hotline cho các ca hỏi khoa/lịch cơ bản, giữ escalation cho ca nguy hiểm.</p></div>
+        <div class="card reveal"><h3>Cho bệnh nhân</h3><p>Ít phải đoán khoa, có lý do gợi ý, vẫn có quyền đổi và kiểm soát dữ liệu cá nhân.</p></div>
+        <div class="card reveal"><h3>Cho đội sản phẩm</h3><p>Override, low confidence, red flag và ticket status là tín hiệu học để cải thiện routing sau demo.</p></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <p class="label reveal">Scope & Next Steps</p>
+      <h2 class="heading reveal">Prototype hôm nay chứng minh lát cắt, chưa giả vờ là hệ thống y tế hoàn chỉnh.</h2>
+      <div class="grid-2" style="margin-top:28px">
+        <div class="card reveal"><h3>Đã có trong demo</h3><ul><li>AI agent thật hoặc fallback rules</li><li>Medical routing tools</li><li>PII guard frontend/backend</li><li>Booking submit/list/update bằng CSV</li></ul></div>
+        <div class="card reveal"><h3>Chưa làm trong Day 06</h3><ul><li>API Vinmec production</li><li>OTP, thanh toán, bảo hiểm</li><li>Medical diagnosis</li><li>Vector DB/fine-tune từ transcript</li></ul></div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <blockquote class="quote reveal">
+        AI tốt nhất trong sản phẩm này không phải là “trả lời như bác sĩ”, mà là giúp người bệnh đi đúng bước tiếp theo một cách an toàn.
+        <small>VinmecCare AI Booking Agent - TeamCorner</small>
+      </blockquote>
+    </section>
+  </div>
+
+  <script>
+    class SlideEngine {
+      constructor() {
+        this.deck = document.getElementById('deck');
+        this.slides = Array.from(document.querySelectorAll('.slide'));
+        this.current = 0;
+        this.total = this.slides.length;
+        this.buildChrome();
+        this.observe();
+        this.bind();
+        this.update();
+      }
+      buildChrome() {
+        this.progress = document.createElement('div');
+        this.progress.className = 'progress';
+        document.body.appendChild(this.progress);
+        this.counter = document.createElement('div');
+        this.counter.className = 'counter';
+        document.body.appendChild(this.counter);
+        this.dots = document.createElement('div');
+        this.dots.className = 'dots';
+        this.dotButtons = this.slides.map((_, index) => {
+          const button = document.createElement('button');
+          button.className = 'dot';
+          button.type = 'button';
+          button.title = 'Slide ' + (index + 1);
+          button.addEventListener('click', () => this.goTo(index));
+          this.dots.appendChild(button);
+          return button;
+        });
+        document.body.appendChild(this.dots);
+      }
+      observe() {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              this.current = this.slides.indexOf(entry.target);
+              this.update();
+            }
+          });
+        }, { threshold: 0.55 });
+        this.slides.forEach((slide) => observer.observe(slide));
+      }
+      bind() {
+        document.addEventListener('keydown', (event) => {
+          if (['ArrowDown', 'ArrowRight', ' ', 'PageDown'].includes(event.key)) {
+            event.preventDefault();
+            this.next();
+          }
+          if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(event.key)) {
+            event.preventDefault();
+            this.prev();
+          }
+          if (event.key === 'Home') {
+            event.preventDefault();
+            this.goTo(0);
+          }
+          if (event.key === 'End') {
+            event.preventDefault();
+            this.goTo(this.total - 1);
+          }
+        });
+      }
+      goTo(index) {
+        this.slides[Math.max(0, Math.min(index, this.total - 1))].scrollIntoView({ behavior: 'smooth' });
+      }
+      next() { if (this.current < this.total - 1) this.goTo(this.current + 1); }
+      prev() { if (this.current > 0) this.goTo(this.current - 1); }
+      update() {
+        this.progress.style.width = ((this.current + 1) / this.total * 100) + '%';
+        this.counter.textContent = (this.current + 1) + ' / ' + this.total;
+        this.dotButtons.forEach((button, index) => button.classList.toggle('active', index === this.current));
+      }
+    }
+
+    function autoFit() {
+      document.querySelectorAll('.metric strong').forEach((el) => {
+        if (el.scrollWidth > el.clientWidth) {
+          const scale = el.clientWidth / el.scrollWidth;
+          el.style.transform = 'scale(' + scale + ')';
+          el.style.transformOrigin = 'left top';
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      autoFit();
+      new SlideEngine();
+    });
+  </script>
+</body>
+</html>
