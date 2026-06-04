@@ -1,4 +1,4 @@
-# Day06-Lop-NhomXX: VinmecCare AI Agent đặt lịch
+# Day06-C401-TeamCorner: VinmecCare AI Agent đặt lịch
 
 Chào mừng đến với repository của nhóm! Dự án này là sản phẩm prototype được xây dựng trong kỳ Hackathon Day 06.
 
