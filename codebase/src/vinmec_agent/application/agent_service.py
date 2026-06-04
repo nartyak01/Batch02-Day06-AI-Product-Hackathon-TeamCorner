@@ -15,7 +15,7 @@ from src.utils.flow_log import log_react_step
 
 from ..domain.privacy import detect_pii
 from ..domain.response import base_response, coerce_float
-from ..domain.text import contains_normalized_keyword, normalize_vietnamese
+from ..domain.text import normalize_vietnamese
 
 
 AVAILABLE_LLM_TOOLS = [
@@ -82,11 +82,14 @@ class BookingAgent:
         if scope_guard:
             return scope_guard
 
+        # Extract previous observations from conversation history
+        previous_observations = self._extract_observations_from_history(history)
+        
         react_state: dict[str, Any] = {
             "message": message,
             "history": history,
             "context": context,
-            "observations": {},
+            "observations": previous_observations,  # Carry over findings from previous turns
             "trace": [],
         }
 
@@ -143,11 +146,11 @@ class BookingAgent:
     def _action_preconditions_met(self, action: str, react_state: dict[str, Any]) -> bool:
         observations = react_state["observations"]
         if action == "suggest_specialty":
-            return bool(observations.get("symptom_summary"))
+            return bool(observations.get("symptom_summary")) and "suggestions" not in observations
         if action == "get_available_slots":
-            return bool(observations.get("suggestions"))
+            return bool(observations.get("suggestions")) and "slots" not in observations
         if action == "create_booking_draft":
-            return bool(observations.get("symptom_summary") and observations.get("suggestions") and observations.get("slots"))
+            return bool(observations.get("symptom_summary") and observations.get("suggestions") and observations.get("slots")) and "booking_draft" not in observations
         if action == "final_answer":
             return bool(observations.get("booking_draft"))
         if action == "ask_clarifying_question":
@@ -160,124 +163,24 @@ class BookingAgent:
             return "symptom_summary" not in observations
         return False
 
-    def _intake_flags(self, user_message: str, context: dict[str, Any]) -> dict[str, bool]:
-        normalized = normalize_vietnamese(user_message)
-        has_obvious_symptom = any(
-            contains_normalized_keyword(normalized, keyword)
-            for keyword in [
-                "dau",
-                "sot",
-                "ho",
-                "kho tho",
-                "chong mat",
-                "buon non",
-                "met",
-                "tieu chay",
-                "ngat",
-                "te",
-                "phat ban",
-                "dau bung",
-                "dau nguc",
-                "dau dau",
-            ]
-        )
-        has_duration = any(
-            contains_normalized_keyword(normalized, keyword)
-            for keyword in [
-                "hom nay",
-                "hom qua",
-                "toi qua",
-                "sang nay",
-                "chieu nay",
-                "dem qua",
-                "ngay",
-                "gio",
-                "tuan",
-                "vai ngay",
-                "vai gio",
-                "vai tuan",
-                "may ngay",
-                "keo dai",
-                "tu dau",
-                "lap lai",
-            ]
-        )
-        has_severity = any(
-            contains_normalized_keyword(normalized, keyword)
-            for keyword in [
-                "nhe",
-                "vua",
-                "nang",
-                "rat nang",
-                "am i",
-                "nhoi",
-                "tung dot",
-                "1-10",
-                "diem",
-                "kho chiu",
-            ]
-        )
-        has_location = any(
-            contains_normalized_keyword(normalized, keyword)
-            for keyword in [
-                "bung",
-                "ron",
-                "quanh ron",
-                "nguc",
-                "dau dau",
-                "co",
-                "gay",
-                "vai",
-                "lung",
-                "khop",
-                "chan",
-                "tay",
-                "mat",
-                "mui",
-                "hong",
-                "tai",
-                "da",
-            ]
-        )
-        has_associated_symptoms = any(
-            contains_normalized_keyword(normalized, keyword)
-            for keyword in [
-                "sot",
-                "buon non",
-                "non",
-                "kho tho",
-                "chong mat",
-                "dau dau",
-                "di ngoai",
-                "tieu chay",
-                "non nao",
-                "te tay",
-                "yeu chi",
-                "ho",
-                "dam",
-                "met moi",
-            ]
-        )
-        has_age = bool(context.get("age_or_birth_year")) or bool(
-            re.search(r"\b(?:19|20)\d{2}\b|\b\d{1,2}\s*tuoi\b", normalized)
-        )
-        has_facility = bool(context.get("preferred_facility_id") or context.get("facility_id")) or any(
-            keyword in normalized
-            for keyword in [
-                "times city",
-                "smart city",
-                "vinmec",
-            ]
-        )
-        return {
-            "has_obvious_symptom": has_obvious_symptom,
-            "has_duration": has_duration,
-            "has_severity": has_severity,
-            "has_location": has_location,
-            "has_associated_symptoms": has_associated_symptoms,
-            "has_age": has_age,
-            "has_facility": has_facility,
-        }
+    def _count_clarifying_turns(self, history: list[dict[str, Any]]) -> int:
+        markers = [
+            "them mot chut thong tin",
+            "mo ta chi tiet hon",
+            "chi tiet hon",
+            "can them thong tin",
+            "de goi y dung chuyen khoa hon",
+            "trieu chung bat dau tu khi nao",
+            "mo ta ngan gon trieu chung",
+        ]
+        count = 0
+        for msg in history[-8:]:
+            if msg.get("role") != "assistant":
+                continue
+            content = normalize_vietnamese(str(msg.get("content", "")))
+            if any(marker in content for marker in markers):
+                count += 1
+        return count
 
     def _scope_guard(
         self,
@@ -314,19 +217,7 @@ class BookingAgent:
                 meta={"guard": "scope_adversarial"},
             )
 
-        if self._has_off_topic_anchor(user_message) and not self._has_real_symptom(user_message, context):
-            return self._build_off_topic_response("scope_off_topic_anchor")
-
-        if self._has_medical_booking_intent(user_message, context):
-            return None
-
-        if self._is_contextual_medical_followup(user_message, history):
-            return None
-
-        if self._history_has_off_topic_anchor(history):
-            return self._build_off_topic_response("scope_off_topic_followup")
-
-        return self._build_off_topic_response("scope_off_topic")
+        return None
 
     def _build_off_topic_response(self, guard: str) -> dict[str, Any]:
         return base_response(
@@ -339,106 +230,19 @@ class BookingAgent:
             meta={"guard": guard},
         )
 
-    def _has_real_symptom(self, user_message: str, context: dict[str, Any]) -> bool:
-        flags = self._intake_flags(user_message, context)
-        return bool(flags["has_obvious_symptom"] or flags["has_associated_symptoms"])
-
-    def _has_off_topic_anchor(self, user_message: str) -> bool:
-        normalized = normalize_vietnamese(user_message)
-        off_topic_keywords = [
-            "milo",
-            "tra sua",
-            "cafe",
-            "ca phe",
-            "coca",
-            "pepsi",
-            "nuoc ngot",
-            "bia",
-            "ruou",
-            "pizza",
-            "banh mi",
-            "pho",
-            "game",
-            "xem phim",
-            "du lich",
-            "code",
-            "lap trinh",
-            "chung khoan",
-            "crypto",
-        ]
-        return any(contains_normalized_keyword(normalized, keyword) for keyword in off_topic_keywords)
-
-    def _has_medical_booking_intent(self, user_message: str, context: dict[str, Any]) -> bool:
-        if self._has_off_topic_anchor(user_message) and not self._has_real_symptom(user_message, context):
-            return False
-
-        if self._has_real_symptom(user_message, context):
-            return True
-
-        normalized = normalize_vietnamese(user_message)
-        medical_keywords = [
-            "dat lich",
-            "kham",
-            "bac si",
-            "chuyen khoa",
-            "khoa",
-            "trieu chung",
-            "vinmec",
-            "tu van vien",
-            "callback",
-            "ticket",
-            "lich hen",
-            "tai kham",
-            "xet nghiem",
-            "tiem chung",
-            "vacxin",
-            "vaccine",
-        ]
-        return any(contains_normalized_keyword(normalized, keyword) for keyword in medical_keywords)
-
-    def _is_contextual_medical_followup(self, user_message: str, history: list[dict[str, Any]]) -> bool:
-        if self._has_off_topic_anchor(user_message) and not self._has_real_symptom(user_message, {}):
-            return False
-
-        normalized = normalize_vietnamese(user_message)
-        followup_keywords = [
-            "hom nay",
-            "hom qua",
-            "toi qua",
-            "tu",
-            "muc do",
-            "nhe",
-            "vua",
-            "nang",
-            "tang dan",
-            "tung con",
-            "lan",
-            "kem",
-            "co so",
-            "times city",
-            "smart city",
-        ]
-        if not any(contains_normalized_keyword(normalized, keyword) for keyword in followup_keywords):
-            return False
-
-        recent_messages = history[-6:]
-        for item in recent_messages:
-            if item.get("role") != "user":
+    def _extract_observations_from_history(self, history: list[dict[str, Any]]) -> dict[str, Any]:
+        """Extract findings from previous turns in the conversation history."""
+        observations: dict[str, Any] = {}
+        
+        for msg in history[-10:]:
+            if msg.get("role") != "assistant":
                 continue
-            content = str(item.get("content") or item.get("message") or "")
-            if content.strip() == user_message.strip():
+            
+            content = msg.get("content", "")
+            if isinstance(content, str):
                 continue
-            if self._has_medical_booking_intent(content, {}):
-                return True
-        return False
-
-    def _history_has_off_topic_anchor(self, history: list[dict[str, Any]]) -> bool:
-        for item in history[-6:]:
-            if item.get("role") == "user" and self._has_off_topic_anchor(
-                str(item.get("content") or item.get("message") or "")
-            ):
-                return True
-        return False
+        
+        return observations
 
     def _fallback_next_action(self, react_state: dict[str, Any]) -> str:
         message = react_state["message"]
@@ -446,12 +250,14 @@ class BookingAgent:
         context = react_state["context"]
         observations = react_state["observations"]
 
+        if "symptom_summary" not in observations:
+            return "analyze_intake"
+        
         if not observations.get("clarifying_checked"):
             observations["clarifying_checked"] = True
             if self._should_ask_more_info(message, history, context):
                 return "ask_clarifying_question"
-        if "symptom_summary" not in observations:
-            return "analyze_intake"
+        
         if "suggestions" not in observations:
             return "suggest_specialty"
         if "slots" not in observations:
@@ -474,7 +280,7 @@ class BookingAgent:
         if action == "ask_clarifying_question":
             questions = action_input.get("questions")
             if not isinstance(questions, list) or not questions:
-                questions = self._build_clarifying_questions(message, context)
+                questions = ["Bạn có thể mô tả chi tiết hơn về triệu chứng của mình không?"]
             reply = action_input.get("assistant_reply") or "Để gợi ý đúng chuyên khoa hơn, tôi cần thêm một chút thông tin."
             return {
                 "summary": "asked_clarifying_questions",
@@ -509,7 +315,7 @@ class BookingAgent:
                 or context.get("facility_id")
                 or self.tools.infer_facility_id(message, context)
             )
-            if gemini_result and gemini_result.get("needs_more_info"):
+            if gemini_result and gemini_result.get("needs_more_info") and self._should_ask_more_info(message, history, context):
                 questions = gemini_result.get("questions")
                 if not isinstance(questions, list) or not questions:
                     questions = self._build_clarifying_questions(message, context)
@@ -753,50 +559,13 @@ class BookingAgent:
         if context.get("skip_clarifying_questions"):
             return False
 
-        previous_questions = int(context.get("clarifying_questions_asked", 0) or 0)
-        if previous_questions >= 2:
+        if self.tools.infer_specialty_hint(user_message):
             return False
 
-        flags = self._intake_flags(user_message, context)
-        if not flags["has_obvious_symptom"]:
-            return True
-        normalized = normalize_vietnamese(user_message)
-        if len(normalized.split()) <= 4 and previous_questions < 1:
-            return True
-        missing_core_details = any(
-            not flags[key]
-            for key in ("has_duration", "has_severity", "has_location", "has_associated_symptoms", "has_age")
-        )
-        if previous_questions < 1 and missing_core_details:
-            return True
-        if previous_questions < 1 and not flags["has_facility"] and len(normalized.split()) <= 12:
-            return True
-        return False
+        previous_questions = int(context.get("clarifying_questions_asked", 0) or 0)
+        previous_questions = max(previous_questions, self._count_clarifying_turns(history))
 
-    def _build_clarifying_questions(self, user_message: str, context: dict[str, Any]) -> list[str]:
-        flags = self._intake_flags(user_message, context)
-        questions: list[str] = []
-
-        if not flags["has_duration"] or not flags["has_severity"]:
-            questions.append(
-                "Triệu chứng bắt đầu từ khi nào, mức độ hiện tại thế nào, và có tăng dần hay từng cơn không?"
-            )
-
-        if not flags["has_location"] or not flags["has_associated_symptoms"]:
-            questions.append(
-                "Triệu chứng nằm ở vị trí nào, có lan đi đâu, và có kèm sốt, buồn nôn, nôn, khó thở, chóng mặt, tiêu chảy hoặc tê yếu không?"
-            )
-
-        if not flags["has_age"]:
-            questions.append("Bạn cho mình biết tuổi hoặc năm sinh để mình chọn khoa sát hơn?")
-
-        if not flags["has_facility"]:
-            questions.append("Bạn muốn khám ở cơ sở nào của Vinmec, ví dụ Times City hay Smart City?")
-
-        if not questions:
-            questions.append("Bạn có bệnh nền, thuốc đang dùng hoặc triệu chứng nào khác cần lưu ý không?")
-
-        return questions[:2]
+        return previous_questions < 1
 
     def _build_fallback_symptom_summary(self, user_message: str) -> str:
         clean = re.sub(r"\s+", " ", user_message).strip()

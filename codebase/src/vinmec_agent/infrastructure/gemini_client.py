@@ -82,6 +82,13 @@ class GeminiClient(LLMClient):
 Bạn đang là planner trong vòng ReAct. Hệ thống Python đã kiểm tra PII/red flag trước khi gọi bạn.
 Hãy chọn đúng 1 action tiếp theo từ danh sách available_tools.
 
+⚠️ IMPORTANT FOR MULTI-TURN CONVERSATIONS:
+- User has provided information across MULTIPLE messages.
+- Review the ENTIRE history carefully - symptoms may span multiple turns.
+- Do NOT ask for information that was already provided in earlier messages.
+- Only ask clarifying questions for GENUINELY missing critical details.
+- If current message adds NEW info to previous messages, use 'analyze_intake' to process combined info.
+
 available_tools:
 {json.dumps(available_tools, ensure_ascii=False)}
 
@@ -91,10 +98,10 @@ observations an toàn hiện có:
 context hiện có:
 {json.dumps(context, ensure_ascii=False)}
 
-history đã lọc PII:
-{json.dumps(safe_history[-6:], ensure_ascii=False)}
+history đã lọc PII (review tất cả để tìm symptom info):
+{json.dumps(safe_history[-10:], ensure_ascii=False)}
 
-user_message:
+user_message (tin nhắn hiện tại):
 {user_message}
 
 Chỉ trả JSON action, không markdown, không giải thích ngoài JSON.
@@ -126,7 +133,7 @@ Routing notes:
 
 Hãy phân tích lượt chat hiện tại và trả về JSON với schema:
 {{
-  "symptom_summary": "tóm tắt triệu chứng, không chứa PII",
+  "symptom_summary": "tóm tắt tất cả triệu chứng và nhu cầu y tế từ TOÀN BỘ lịch sử chat (không chỉ tin nhắn cuối), không chứa PII",
   "confidence": 0.0,
   "red_flag_risk": false,
   "suggested_specialties": [

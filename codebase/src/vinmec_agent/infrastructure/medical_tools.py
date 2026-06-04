@@ -15,16 +15,6 @@ from ..domain.response import coerce_float
 from ..domain.text import contains_normalized_keyword, normalize_vietnamese
 
 
-LEGACY_SPECIALTY_ALIASES = {
-    "gastro": "tieu_hoa_gan_mat",
-    "general_internal": "suc_khoe_tong_quat",
-    "cardiology": "tim_mach",
-    "respiratory": "mien_dich_di_ung",
-    "neurology": "than_kinh",
-    "emergency": "cap_cuu",
-}
-
-
 class MedicalTools:
     """Adapter for Dat's agent, backed by the shared CSV/tool layer."""
 
@@ -36,28 +26,6 @@ class MedicalTools:
             "reason": result.get("message", ""),
             "hotline": result.get("hotline", ""),
         }
-
-    def detect_specialty_override(self, text: str) -> dict[str, Any] | None:
-        normalized = normalize_vietnamese(text)
-        override_markers = [
-            "toi muon kham",
-            "muon kham",
-            "doi sang",
-            "chuyen sang",
-            "chon khoa",
-            "kham khoa",
-        ]
-        if not any(marker in normalized for marker in override_markers):
-            return None
-
-        for specialty in get_specialties():
-            sid = str(specialty["specialty_id"])
-            if sid == "cap_cuu":
-                continue
-            keywords = [str(specialty.get("name", "")), sid]
-            if any(contains_normalized_keyword(normalized, keyword) for keyword in keywords):
-                return self._specialty_response(specialty, "User chủ động đổi/chọn chuyên khoa này.", 1.0)
-        return None
 
     def infer_facility_id(self, text: str, context: dict[str, Any]) -> str:
         explicit = context.get("preferred_facility_id") or context.get("facility_id")
@@ -77,6 +45,37 @@ class MedicalTools:
                 return str(facility["facility_id"])
         return "times_city"
 
+    def detect_specialty_override(self, text: str) -> dict[str, Any] | None:
+        normalized = normalize_vietnamese(text)
+        override_markers = [
+            "toi muon kham",
+            "muon kham",
+            "doi sang",
+            "chuyen sang",
+            "chon khoa",
+            "kham khoa",
+            "kham chuyen khoa",
+        ]
+        if not any(marker in normalized for marker in override_markers):
+            return None
+
+        specialty_id = self._infer_specialty_id_from_text(text)
+        if not specialty_id:
+            return None
+
+        specialty = next((item for item in get_specialties() if item["specialty_id"] == specialty_id), None)
+        if not specialty:
+            return None
+        return self._specialty_response(specialty, "User chủ động đổi/chọn chuyên khoa này.", 1.0)
+
+    def infer_specialty_hint(self, text: str) -> str | None:
+        override = self.detect_specialty_override(text)
+        if override:
+            return str(override["specialty_id"])
+
+        specialty_id = self._infer_specialty_id_from_text(text)
+        return specialty_id or None
+
     def suggest_specialty(
         self,
         symptom_summary: str,
@@ -90,7 +89,17 @@ class MedicalTools:
         override = self.detect_specialty_override(user_message)
         if override:
             return [override]
+
         agent_choices = self._agent_choices_from_gemini(gemini_result)
+        if not agent_choices:
+            inferred_specialty_id = self._infer_specialty_id_from_text(text)
+            if inferred_specialty_id:
+                agent_choices = [
+                    {
+                        "specialty_id": inferred_specialty_id,
+                        "reason": self._routing_reason_for_specialty(inferred_specialty_id),
+                    }
+                ]
 
         if agent_choices:
             validated = backend_suggest_specialty(
@@ -110,7 +119,11 @@ class MedicalTools:
             if suggestions:
                 return suggestions[:3]
 
-        return self._score_specialties(text)[:3]
+        default = next(
+            (item for item in get_specialties() if item["specialty_id"] == "suc_khoe_tong_quat"),
+            get_specialties()[0],
+        )
+        return [self._specialty_response(default, "Triệu chứng còn chung chung, nên khám tổng quát để được sàng lọc ban đầu.", 0.52)]
 
     def get_available_slots(self, specialty_id: str, facility_id: str | None = None) -> list[dict[str, Any]]:
         canonical_specialty_id = self._canonical_specialty_id(specialty_id)
@@ -180,43 +193,6 @@ class MedicalTools:
                 )
         return choices
 
-    def _score_specialties(self, text: str) -> list[dict[str, Any]]:
-        normalized = normalize_vietnamese(text)
-        scored: list[dict[str, Any]] = []
-
-        for specialty in get_specialties():
-            if specialty["specialty_id"] == "cap_cuu":
-                continue
-
-            searchable = normalize_vietnamese(
-                f"{specialty.get('name', '')} {specialty.get('description', '')}"
-            )
-            tokens = [token for token in normalized.split() if len(token) >= 3]
-            score = sum(1 for token in tokens if token in searchable)
-
-            for keyword in self._keyword_hints(str(specialty["specialty_id"])):
-                if contains_normalized_keyword(normalized, keyword):
-                    score += 3 if " " in normalize_vietnamese(keyword) else 2
-
-            if score > 0:
-                scored.append(self._specialty_response(specialty, specialty.get("description", ""), min(0.9, 0.48 + score * 0.08)))
-
-        if not scored:
-            default = next(
-                (item for item in get_specialties() if item["specialty_id"] == "suc_khoe_tong_quat"),
-                get_specialties()[0],
-            )
-            scored.append(
-                self._specialty_response(
-                    default,
-                    "Triệu chứng còn chung chung, nên khám tổng quát để được sàng lọc ban đầu.",
-                    0.52,
-                )
-            )
-
-        scored.sort(key=lambda item: item.get("confidence", 0), reverse=True)
-        return scored
-
     def _specialty_response(self, specialty: dict[str, Any], reason: str, confidence: float) -> dict[str, Any]:
         return {
             "specialty_id": specialty["specialty_id"],
@@ -244,28 +220,106 @@ class MedicalTools:
         return None
 
     def _canonical_specialty_id(self, specialty_id: str) -> str:
-        candidate = LEGACY_SPECIALTY_ALIASES.get(specialty_id, specialty_id)
         valid_ids = {specialty["specialty_id"] for specialty in get_specialties(active_only=False)}
-        return candidate if candidate in valid_ids else ""
+        return specialty_id if specialty_id in valid_ids else ""
 
     def _infer_specialty_id_from_text(self, text: str) -> str:
         normalized = normalize_vietnamese(text)
         for specialty in get_specialties():
             sid = str(specialty["specialty_id"])
-            if any(contains_normalized_keyword(normalized, keyword) for keyword in self._keyword_hints(sid) + [str(specialty.get("name", "")), sid]):
+            if any(contains_normalized_keyword(normalized, keyword) for keyword in [str(specialty.get("name", "")), sid]):
+                return str(specialty["specialty_id"])
+            if any(contains_normalized_keyword(normalized, keyword) for keyword in self._keyword_hints(sid)):
                 return str(specialty["specialty_id"])
         return ""
 
     def _keyword_hints(self, specialty_id: str) -> list[str]:
         return {
-            "tim_mach": ["đau ngực", "hồi hộp", "tim", "huyết áp", "khó thở"],
-            "tieu_hoa_gan_mat": ["đau bụng", "tiêu chảy", "buồn nôn", "nôn", "ợ chua"],
-            "nhi": ["trẻ em", "bé", "con tôi", "sốt", "ho"],
-            "mien_dich_di_ung": ["dị ứng", "phát ban", "mày đay", "ngứa", "hen"],
-            "than_kinh": ["đau đầu", "chóng mặt", "tê bì", "run"],
-            "suc_khoe_tong_quat": ["mệt mỏi", "khám sức khỏe", "không rõ", "tổng quát"],
-            "chan_thuong_the_thao": ["chấn thương", "đau gối", "đau vai", "gãy xương"],
-            "suc_khoe_phu_nu": ["phụ khoa", "kinh nguyệt", "mang thai"],
-            "vacxin": ["vaccine", "vacxin", "tiêm chủng"],
-            "nha_khoa_view": ["đau răng", "nha khoa", "sâu răng"],
+            "tieu_hoa_gan_mat": [
+                "dau bung",
+                "dau da day",
+                "dau thuong vi",
+                "buon non",
+                "non",
+                "tieu chay",
+                "day bung",
+                "o chua",
+            ],
+            "tim_mach": [
+                "dau nguc",
+                "hoi hop",
+                "tim dap nhanh",
+                "tang huyet ap",
+                "kho tho",
+            ],
+            "suc_khoe_phu_nu": [
+                "mang thai",
+                "thai",
+                "phu khoa",
+                "san khoa",
+                "kinh nguyet",
+                "ra mau am dao",
+            ],
+            "nhi": [
+                "tre em",
+                "be",
+                "con toi",
+                "tiem chung",
+                "vacxin",
+                "vaccine",
+            ],
+            "vacxin": [
+                "tiem chung",
+                "tiem phong",
+                "vacxin",
+                "vaccine",
+            ],
+            "nha_khoa_view": [
+                "dau rang",
+                "sau rang",
+                "nha khoa",
+                "rang",
+            ],
+            "chan_thuong_the_thao": [
+                "chan thuong",
+                "dau goi",
+                "dau vai",
+                "gay xuong",
+                "sai khop",
+            ],
+            "than_kinh": [
+                "dau dau",
+                "chong mat",
+                "te bi",
+                "run",
+            ],
+            "mien_dich_di_ung": [
+                "di ung",
+                "phat ban",
+                "may day",
+                "ngua",
+                "hen",
+            ],
+            "suc_khoe_tong_quat": [
+                "kham tong quat",
+                "suc khoe tong quat",
+                "kiem tra suc khoe",
+                "tong quat",
+            ],
         }.get(specialty_id, [])
+
+    def _routing_reason_for_specialty(self, specialty_id: str) -> str:
+        return {
+            "tieu_hoa_gan_mat": "Đau bụng, buồn nôn hoặc nôn thường phù hợp với chuyên khoa Tiêu hoá - Gan mật.",
+            "tim_mach": "Đau ngực, hồi hộp hoặc khó thở cần được tim mạch đánh giá.",
+            "suc_khoe_phu_nu": "Nhu cầu sản phụ khoa hoặc mang thai phù hợp với Sức khoẻ phụ nữ.",
+            "nhi": "Triệu chứng ở trẻ em phù hợp với chuyên khoa Nhi.",
+            "vacxin": "Nhu cầu tiêm chủng phù hợp với Trung tâm Vacxin.",
+            "nha_khoa_view": "Triệu chứng răng miệng phù hợp với Nha khoa.",
+            "chan_thuong_the_thao": "Chấn thương hoặc đau cơ xương khớp phù hợp với Chấn thương chỉnh hình.",
+            "than_kinh": "Đau đầu, chóng mặt hoặc tê bì phù hợp với Thần kinh.",
+            "mien_dich_di_ung": "Phát ban, ngứa hoặc dị ứng phù hợp với Miễn dịch - Dị ứng.",
+            "suc_khoe_tong_quat": "Triệu chứng còn chung chung, nên khám tổng quát để được sàng lọc ban đầu.",
+        }.get(specialty_id, "")
+
+
