@@ -1,0 +1,25 @@
+doctor_id,name,title,specialty_id,facility_id,active
+doc_emergency_01,Nguyễn Minh An,BS.CKII,spec_emergency,fac_times_city,true
+doc_cardiology_01,Trần Quốc Bảo,ThS.BS,spec_cardiology,fac_times_city,true
+doc_cardiology_02,Phạm Hồng Linh,BS.CKII,spec_cardiology,fac_central_park,true
+doc_orthopedics_01,Lê Tuấn Kiệt,ThS.BS,spec_orthopedics,fac_smart_city,true
+doc_pediatrics_01,Vũ Thu Hà,BS.CKII,spec_pediatrics,fac_times_city,true
+doc_pediatrics_02,Hoàng Minh Châu,ThS.BS,spec_pediatrics,fac_central_park,true
+doc_oncology_01,Đỗ Hải Nam,BS.CKII,spec_oncology,fac_times_city,true
+doc_digestive_01,Nguyễn Lan Hương,ThS.BS,spec_digestive,fac_times_city,true
+doc_digestive_02,Phan Đức Việt,BS.CKII,spec_digestive,fac_central_park,true
+doc_allergy_01,Trịnh Mai Anh,ThS.BS,spec_allergy,fac_times_city,true
+doc_regenerative_01,Đặng Quốc Thái,ThS.BS,spec_regenerative,fac_times_city,true
+doc_women_01,Lê Hoàng Yến,BS.CKII,spec_women,fac_times_city,true
+doc_general_01,Ngô Thanh Bình,ThS.BS,spec_general,fac_times_city,true
+doc_stemcell_01,Tạ Minh Khang,ThS.BS,spec_stemcell,fac_times_city,true
+doc_vaccine_01,Phạm An Nhiên,BS,spec_vaccine,fac_smart_city,true
+doc_traditional_01,Bùi Khánh Linh,BS,spec_traditional,fac_times_city,true
+doc_breast_01,Đinh Mai Phương,ThS.BS,spec_breast,fac_times_city,true
+doc_neurology_01,Trần Anh Dũng,BS.CKII,spec_neurology,fac_times_city,true
+doc_mental_01,Nguyễn Phương Mai,ThS.BS,spec_mental,fac_times_city,true
+doc_dental_01,Hoàng Gia Hân,BS,spec_dental,fac_times_city,true
+doc_pharmacy_01,Lý Thanh Tâm,Dược sĩ,spec_pharmacy,fac_times_city,true
+doc_general_02,Lâm Gia Bảo,BS,spec_general,fac_da_nang,true
+doc_digestive_03,Võ Minh Quân,ThS.BS,spec_digestive,fac_nha_trang,true
+doc_pediatrics_03,Đặng Hồng Ngọc,BS,spec_pediatrics,fac_hai_phong,true
