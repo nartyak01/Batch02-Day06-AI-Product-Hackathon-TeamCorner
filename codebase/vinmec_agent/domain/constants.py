@@ -1,0 +1,6 @@
+STATE_NEED_MORE_INFO = "need_more_info"
+STATE_SUGGESTING_SLOTS = "suggesting_slots"
+STATE_READY_FOR_FORM = "ready_for_form"
+STATE_ESCALATION = "escalation"
+STATE_PII_BLOCKED = "pii_blocked"
+STATE_ERROR = "error"
