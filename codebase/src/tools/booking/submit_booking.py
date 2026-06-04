@@ -73,7 +73,7 @@ def _mark_slot_unavailable(slot_id: str) -> None:
     from pathlib import Path
     import csv
 
-    path = Path(__file__).resolve().parents[3] / "database" / "slots.csv"
+    path = Path(__file__).resolve().parents[3] / "data" / "slots.csv"
     rows: list[dict[str, str]] = []
     with path.open(encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)

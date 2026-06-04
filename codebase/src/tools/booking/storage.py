@@ -1,4 +1,4 @@
-"""Persist bookings to database/bookings.csv — PII stays here only."""
+"""Persist bookings to data/bookings.csv — PII stays here only."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 _CODEBASE_ROOT = Path(__file__).resolve().parents[3]
-BOOKINGS_PATH = _CODEBASE_ROOT / "database" / "bookings.csv"
+BOOKINGS_PATH = _CODEBASE_ROOT / "data" / "bookings.csv"
 
 BOOKING_COLUMNS = [
     "ticket_id",

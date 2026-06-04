@@ -1,4 +1,4 @@
-"""Load mock medical catalog from database/*.csv."""
+"""Load medical catalog from data/*.csv."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 _CODEBASE_ROOT = Path(__file__).resolve().parents[3]
-_DB_DIR = _CODEBASE_ROOT / "database"
+_DB_DIR = _CODEBASE_ROOT / "data"
 
 _catalog_cache: dict[str, list[dict[str, Any]]] | None = None
 
@@ -34,7 +34,7 @@ def _normalize_row(name: str, row: dict[str, str]) -> dict[str, Any]:
 def _load_csv(name: str) -> list[dict[str, Any]]:
     path = _DB_DIR / f"{name}.csv"
     if not path.exists():
-        raise FileNotFoundError(f"Missing mock data file: {path}")
+        raise FileNotFoundError(f"Missing data file: {path}")
     with path.open(encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f)
         return [_normalize_row(name, row) for row in reader]

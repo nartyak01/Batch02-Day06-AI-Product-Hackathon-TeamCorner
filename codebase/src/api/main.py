@@ -1,11 +1,16 @@
 """FastAPI — /tools/* for agent, /form/* for manual booking form."""
 
+from typing import Any
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from src.vinmec_agent import run_agent_turn
 from src.tools.medical import (
     check_red_flags,
     get_available_slots,
+    get_facilities,
+    get_specialties,
     suggest_specialty,
     get_specialty_catalog,
     format_specialty_catalog_for_prompt,
@@ -19,7 +24,7 @@ from src.tools.medical import (
 )
 from src.tools.booking import submit_booking, list_bookings, get_booking, update_booking
 
-app = FastAPI(title="VinmecCare Mock API", version="0.2.0")
+app = FastAPI(title="VinmecCare API", version="0.2.0")
 
 
 # --- Tool A: specialty / symptoms ---
@@ -51,9 +56,32 @@ class AvailableSlotsBody(BaseModel):
     doctor_id: str | None = None
 
 
+class AgentTurnBody(BaseModel):
+    user_message: str
+    history: list[dict[str, str]] = Field(default_factory=list)
+    context: dict[str, Any] = Field(default_factory=dict)
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/reference-data")
+def api_reference_data():
+    return {
+        "facilities": get_facilities(),
+        "specialties": get_specialties(),
+    }
+
+
+@app.post("/agent/turn")
+def api_agent_turn(body: AgentTurnBody):
+    return run_agent_turn(
+        user_message=body.user_message,
+        history=body.history,
+        context=body.context,
+    )
 
 
 @app.get("/tools/specialty-catalog")
@@ -180,9 +208,25 @@ def api_submit_booking(body: SubmitBookingBody):
 
 
 @app.get("/bookings")
-def api_list_bookings(phone: str | None = None, status: str | None = None):
-    """Tab Lịch đã đặt — có thể lọc theo SĐT."""
-    return {"bookings": list_bookings(phone=phone, status=status)}
+def api_list_bookings(
+    ticket_id: str | None = None,
+    name: str | None = None,
+    phone: str | None = None,
+    email: str | None = None,
+    dob: str | None = None,
+    status: str | None = None,
+):
+    """Tab Lịch đã đặt — có thể lọc theo ticket / thông tin cá nhân."""
+    return {
+        "bookings": list_bookings(
+            ticket_id=ticket_id,
+            name=name,
+            phone=phone,
+            email=email,
+            dob=dob,
+            status=status,
+        )
+    }
 
 
 @app.get("/bookings/{ticket_id}")

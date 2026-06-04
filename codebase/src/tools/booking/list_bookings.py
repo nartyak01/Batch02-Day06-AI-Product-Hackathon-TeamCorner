@@ -23,6 +23,7 @@ class EnrichedBooking(TypedDict, total=False):
     specialty_name: str
     doctor_id: str
     doctor_name: str
+    doctor_title: str
     slot_id: str
     slot_date: str
     slot_time: str
@@ -60,6 +61,7 @@ def enrich_booking(row: dict[str, str]) -> EnrichedBooking:
         "specialty_name": specialties.get(sid, {}).get("name", ""),
         "doctor_id": did,
         "doctor_name": doctors.get(did, {}).get("name", ""),
+        "doctor_title": doctors.get(did, {}).get("title", ""),
         "slot_id": slot_id,
         "slot_date": slot.get("date", ""),
         "slot_time": slot.get("time", ""),
@@ -71,13 +73,29 @@ def enrich_booking(row: dict[str, str]) -> EnrichedBooking:
 
 def list_bookings(
     *,
+    ticket_id: str | None = None,
+    name: str | None = None,
     phone: str | None = None,
+    email: str | None = None,
+    dob: str | None = None,
     status: str | None = None,
 ) -> list[EnrichedBooking]:
     rows = load_all_bookings()
+    if ticket_id:
+        ticket_norm = ticket_id.strip().lower()
+        rows = [r for r in rows if r.get("ticket_id", "").strip().lower() == ticket_norm]
+    if name:
+        name_norm = name.strip().lower()
+        rows = [r for r in rows if name_norm in r.get("name", "").strip().lower()]
     if phone:
         phone_norm = phone.strip()
         rows = [r for r in rows if r.get("phone", "").strip() == phone_norm]
+    if email:
+        email_norm = email.strip().lower()
+        rows = [r for r in rows if r.get("email", "").strip().lower() == email_norm]
+    if dob:
+        dob_norm = dob.strip()
+        rows = [r for r in rows if r.get("dob", "").strip() == dob_norm]
     if status:
         rows = [r for r in rows if r.get("status") == status]
     rows.sort(key=lambda r: r.get("created_at", ""), reverse=True)

@@ -1,0 +1,19 @@
+specialty_id,name,description,active
+cap_cuu,Cấp cứu,"Escalation/cấp cứu: đau ngực dữ dội, khó thở nặng, choáng, ngất, co giật, chảy máu không cầm, sốt cao kèm lơ mơ. Không đặt lịch ngoại trú thường.",true
+tim_mach,Trung tâm Tim mạch,"Đau ngực âm ỉ, hồi hộp, tim đập nhanh, tăng huyết áp, khó thở khi gắng sức (không red flag cấp cứu).",true
+ung_buou,Trung tâm Ung bướu,"Khối u/nốt cứng bất thường, sụt cân không rõ nguyên nhân, ho ra máu lâu ngày, thay đổi ruột/bladder kéo dài — sàng lọc và theo dõi ung thư.",true
+mien_dich_di_ung,Miễn dịch - Dị ứng,"Phát ban, mày đay, viêm mũi họng dị ứng, hen phế quản nhẹ, nghi ngờ dị ứng thực phẩm/thuốc.",true
+tieu_hoa_gan_mat,Tiêu hoá - Gan mật,"Đau bụng, tiêu chảy, nôn, ợ chua, vàng da nhẹ, đầy bụng, men gan cao theo dõi — bệnh đường tiêu hóa và gan mật.",true
+nhi,Trung tâm Nhi,"Trẻ em: sốt, ho, tiêu chảy, phát ban, chậm phát triển, tiêm chủng tư vấn — khám nhi khoa.",true
+suc_khoe_phu_nu,Trung tâm Sức khoẻ phụ nữ,"Khám phụ khoa, kinh nguyệt bất thường, mang thai (thai sản), mãn kinh, u xơ tử cung — sức khỏe sinh sản nữ.",true
+suc_khoe_tong_quat,Sức khoẻ tổng quát,"Khám sức khỏe định kỳ, tầm soát tổng quát, triệu chứng chưa rõ cần sàng lọc ban đầu.",true
+nha_khoa_view,Vinmec - View Premium Dental Clinic,"Đau răng, sâu răng, chỉnh nha, cạo vôi, nha khoa thẩm mỹ — không xử lý cấp cứu nội khoa.",true
+y_hoc_co_truyen,Trung tâm Y học cổ truyền Vinmec-Sao Phương Đông,"Đau mỏi mãn tính, thoái hóa, rối loạn giấc ngủ nhẹ, mong muốn điều trị Đông y phối hợp.",true
+tai_tao_te_bao,Trung tâm Y học Tái tạo và Trị liệu Tế bào,"Tư vấn liệu pháp tế bào/tái tạo theo chỉ định chuyên môn, thường sau khi đã có chẩn đoán nền.",true
+chan_thuong_the_thao,Trung tâm Chấn thương chỉnh hình - Y học thể thao,"Chấn thương khớp, gãy xương sau chấn thương, đau vai/gối, thoái hóa khớp, phục hồi thể thao.",true
+te_bao_goc_gen,Viện nghiên cứu tế bào gốc và công nghệ Gen,"Tư vấn xét nghiệm gen, tế bào gốc theo protocol — không thay khám cấp cứu triệu chứng cấp.",true
+vacxin,Trung tâm Vacxin,"Tư vấn và tiêm chủng theo lịch, nhắc mũi vaccine, phác đồ phòng bệnh.",true
+vu,Trung tâm Vú,"Khối vú, đau vú, dịch núm vú, tầm soát ung thư vú, theo dõi sau phẫu thuật vú.",true
+than_kinh,Thần kinh,"Đau đầu kéo dài, chóng mặt, tê bì tay chân, co giật đã được chẩn đoán, Parkinson, đột quỵ tái khám.",true
+tam_than,Trung tâm chăm sóc sức khỏe tinh thần tích hợp,"Lo âu, trầm cảm, mất ngủ liên quan tâm lý, stress kéo dài — hỗ trợ sức khỏe tâm thần (không thay cấp cứu tự hại).",true
+duoc,Khối Dược,"Tư vấn thuốc, tương tác thuốc, liều dùng, mua thuốc theo đơn — không khám chẩn đoán bệnh lý mới.",true

@@ -1,4 +1,4 @@
-# VinmecCare Mock API — Hướng dẫn FE & Agent
+# VinmecCare API — Hướng dẫn FE & Agent
 
 Base URL (local): `http://127.0.0.1:8000`
 
@@ -22,7 +22,7 @@ OpenAPI tự động: `http://127.0.0.1:8000/docs`
 
 ```text
 ┌─────────────┐     /tools/*      ┌──────────────┐
-│ Agent Đạt   │ ────────────────► │ Backend mock │
+│ Agent Đạt   │ ────────────────► │ Backend      │
 │ (Gemini)    │   triệu chứng     │   :8000      │
 └─────────────┘                   └──────┬───────┘
                                          │
@@ -30,7 +30,7 @@ OpenAPI tự động: `http://127.0.0.1:8000/docs`
 │ FE Quân     │ ───────────────────────┤ (PII)
 │ Chat + Form │                        │
 └─────────────┘                        ▼
-                                 bookings.csv
+                                 data/bookings.csv
 ```
 
 | Nhóm route | Người dùng | Mục đích |
@@ -497,4 +497,4 @@ package = suggest_booking_package(sid, facility_id="times_city")
 | Booking / PII | Hoàng Nam (2A202600870) | `src/tools/booking/` |
 | API routes | Chung | `src/api/main.py` |
 
-**Regenerate mock CSV:** `python scripts/generate_vinmec_mock.py`
+**Regenerate CSV:** `python scripts/generate_vinmec_data.py`
