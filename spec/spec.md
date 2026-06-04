@@ -276,7 +276,7 @@ Kỳ vọng:
 |---|---|---|---|
 |Lê Đàm Quân| UI/UX | Dựng giao diện chat, card gợi ý khoa/slot, form đặt lịch, tab lịch đã đặt, loading/error/warning states | Prototype nhìn được và chạy được end-to-end trên UI |
 |Nguyễn Tiến Đạt| Call API / Agent | Tích hợp Gemini, viết system prompt, gửi message đã qua guard, nhận response có cấu trúc, xử lý lỗi API/fallback mock | Agent trả `symptomSummary`, `confidence`, `redFlagRisk`, `suggestedSpecialties` |
-|Trần Nguyễn Đăng Khoa| Tool 1 - Medical routing tools | Chuẩn bị mock data y tế trong code, kiểm tra red flag bằng rule trong code, gợi ý chuyên khoa, lấy slot trống, xử lý override khoa | `suggestSpecialty`, `getAvailableSlots`, mock constants |
+|Trần Nguyễn Đăng Khoa| Tool 1 - Medical routing tools | Chuẩn bị mock data y tế trong code, kiểm tra red flag bằng rule trong code, gợi ý chuyên khoa, lấy slot trống, xử lý override khoa | `suggestSpecialty`, `getAvailableSlots`, mock constants, Tạo data mẫu dựa theo các trường đã defined|
 |Trần Hoàng Nam| Tool 2 - Booking/privacy tools | Chặn PII trong chat, tạo booking draft, submit booking mock, lưu/xem/sửa lịch đã đặt, đảm bảo PII không quay lại LLM | `piiGuard`, `createBookingDraft`, `submitBooking`, `listBookings`, `updateBooking` |
 
 ## 15. Demo script 3 phút
