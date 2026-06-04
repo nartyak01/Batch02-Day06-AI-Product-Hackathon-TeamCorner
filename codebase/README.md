@@ -1,56 +1,49 @@
-# Vinmec AI Booking Agent MVP
+# Codebase
 
-Checkpoint 1 prototype for Team Corner: a Vinmec-style AI agent that maps symptoms to an official Vinmec specialty, checks mock slots, asks for confirmation, renders a booking form directly in chat, and stores a ticket in CSV.
+Repo hiện chia 3 phần chính:
 
-## Run
+- `frontend/`: Next.js UI + API route nội bộ cho demo nhanh.
+- `src/`: FastAPI backend/tool layer từ phần của Khoa, dùng cho agent và form integration.
+- `data/`: CSV canonical dùng chung cho cả frontend và backend.
+
+## Chạy frontend
 
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-Open `http://127.0.0.1:3000`.
+Mở `http://127.0.0.1:3000`.
 
-On Windows PowerShell, use `npm.cmd` if script execution policy blocks `npm`:
+Frontend gọi backend qua `frontend/.env.example`:
 
-```powershell
-npm.cmd install
-npm.cmd run dev -- --hostname 127.0.0.1 --port 3000
+```env
+BACKEND_API_URL=http://127.0.0.1:8000
 ```
 
-## Environment
+## Chạy backend Python
 
-Create `.env` from `.env.example`.
+```bash
+pip install -r requirements.txt
+uvicorn src.api.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+OpenAPI: `http://127.0.0.1:8000/docs`.
+
+Backend agent dùng biến ở root `.env.example`:
 
 ```env
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-1.5-flash
+GEMINI_MODEL=gemini-3.1-flash-lite
 ```
-
-If `GEMINI_API_KEY` is empty or Gemini fails, the prototype falls back to deterministic CSV keyword matching so the demo still works.
 
 ## Data
 
-CSV files live in `data/`:
+Không tạo thêm DB riêng. Tất cả database nằm trong `data/`:
 
 - `facilities.csv`
 - `specialties.csv`
 - `doctors.csv`
 - `slots.csv`
 - `bookings.csv`
-
-`specialties.csv` is seeded from Vinmec's official "Chuyên khoa điều trị" page. Doctors and slots are mock data for the hackathon demo.
-
-## Demo Paths
-
-- Happy path: describe symptoms, pick a slot, confirm, submit the inline form, receive a ticket.
-- Override path: change facility/specialty in the slot card and reload slots.
-- PII guard: phone/email/CCCD typed in chat is blocked before the LLM call.
-- Red flag: severe symptoms such as chest pain or trouble breathing trigger hotline/callback instead of normal booking.
-
-## Checks
-
-```bash
-npm run lint
-npm run build
-```

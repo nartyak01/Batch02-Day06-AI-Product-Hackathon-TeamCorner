@@ -152,7 +152,6 @@ h2 {
 }
 
 .quick-panel button,
-.quick-replies button,
 .override-row button {
   border: 1px solid var(--line);
   background: #f9fbfb;
@@ -163,7 +162,6 @@ h2 {
 }
 
 .quick-panel button:hover,
-.quick-replies button:hover,
 .override-row button:hover {
   border-color: var(--teal);
 }
@@ -185,14 +183,27 @@ h2 {
   background: #fbfdfd;
 }
 
-.session-pill {
-  color: var(--blue);
-  border: 1px solid #bad3ee;
-  background: #f1f7ff;
-  padding: 8px 10px;
+.tab-switcher {
+  display: inline-flex;
+  gap: 8px;
+  padding: 4px;
   border-radius: 999px;
-  font-size: 13px;
+  border: 1px solid var(--line);
+  background: #f7fbfb;
+}
+
+.tab-pill {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 8px 12px;
   font-weight: 800;
+}
+
+.tab-pill.active {
+  background: var(--teal-dark);
+  color: white;
 }
 
 .messages {
@@ -353,11 +364,132 @@ textarea {
   resize: vertical;
 }
 
-.quick-replies {
-  display: flex;
-  flex-wrap: wrap;
+.clarifying-questions {
+  display: grid;
   gap: 8px;
   margin-top: 12px;
+}
+
+.clarifying-questions p {
+  margin: 0;
+  border-left: 3px solid var(--teal);
+  padding: 8px 10px;
+  background: #f3faf8;
+  color: var(--ink);
+  border-radius: 0 8px 8px 0;
+}
+
+.tickets-panel {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  overflow-y: auto;
+}
+
+.ticket-search {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fbfdfd;
+}
+
+.ticket-search-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ticket-search-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ticket-search-actions button {
+  border: 1px solid var(--line);
+  background: #f9fbfb;
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 800;
+}
+
+.ticket-results {
+  display: grid;
+  gap: 12px;
+}
+
+.booking-ticket-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.booking-ticket-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #f7fbfb;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.status-chip.confirmed {
+  background: #eaf7ee;
+  border-color: #c7e7cf;
+  color: #2d7a45;
+}
+
+.status-chip.draft {
+  background: #f1f7ff;
+  border-color: #c9dbee;
+  color: #2468b2;
+}
+
+.status-chip.callback,
+.status-chip.pending_review {
+  background: #fff5e8;
+  border-color: #f4d6ab;
+  color: #9b6a00;
+}
+
+.status-chip.cancelled {
+  background: #fff1ef;
+  border-color: #f1c2b1;
+  color: #9b2d18;
+}
+
+.booking-ticket-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+}
+
+.booking-ticket-grid span,
+.booking-ticket-note {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.booking-ticket-note {
+  margin: 0;
+  color: var(--muted);
 }
 
 .ticket-preview {
@@ -471,7 +603,9 @@ label {
   }
 
   .override-row,
-  .form-grid {
+  .form-grid,
+  .ticket-search-grid,
+  .booking-ticket-grid {
     grid-template-columns: 1fr;
   }
 

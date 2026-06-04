@@ -11,7 +11,7 @@ export type Specialty = {
   specialty_id: string;
   name: string;
   description: string;
-  keywords: string;
+  keywords?: string;
   active: string;
 };
 
@@ -22,6 +22,7 @@ export type Doctor = {
   specialty_id: string;
   facility_id: string;
   active: string;
+  availability_status?: string;
 };
 
 export type Slot = {
@@ -49,6 +50,12 @@ export type Booking = {
   status: string;
   notes: string;
   updated_at: string;
+  facility_name?: string;
+  specialty_name?: string;
+  doctor_name?: string;
+  doctor_title?: string;
+  slot_date?: string;
+  slot_time?: string;
 };
 
 export type BookingDraft = {
@@ -77,7 +84,7 @@ export type AgentAction =
   | {
       type: "ask_clarifying_question";
       message: string;
-      quickReplies?: string[];
+      questions?: string[];
     }
   | {
       type: "suggest_specialties";

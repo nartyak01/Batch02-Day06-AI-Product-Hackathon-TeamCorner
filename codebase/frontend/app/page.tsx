@@ -5,6 +5,7 @@ import type {
   AgentAction,
   BookingDraft,
   ChatMessage,
+  Booking,
   EnrichedSlot,
   Facility,
   Specialty
@@ -25,15 +26,28 @@ const initialAssistant: UiMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "Xin chào, mình là trợ lý đặt lịch Vinmec mock. Bạn đang gặp triệu chứng gì và muốn khám ở khu vực nào?"
+    "Xin chào, mình là trợ lý đặt lịch VinmecCare. Bạn đang gặp triệu chứng gì và muốn khám ở khu vực nào?"
 };
 
 export default function Home() {
   const [messages, setMessages] = useState<UiMessage[]>([initialAssistant]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"chat" | "tickets">("chat");
   const [facilities, setFacilities] = useState<Facility[]>([]);
   const [specialties, setSpecialties] = useState<Specialty[]>([]);
+  const [clarifyingQuestionsAsked, setClarifyingQuestionsAsked] = useState(0);
+  const [ticketFilters, setTicketFilters] = useState({
+    ticketId: "",
+    name: "",
+    phone: "",
+    email: "",
+    dob: "",
+    status: ""
+  });
+  const [ticketResults, setTicketResults] = useState<Booking[]>([]);
+  const [ticketError, setTicketError] = useState("");
+  const [ticketLoading, setTicketLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const piiWarning = useMemo(() => detectPii(input), [input]);
@@ -55,6 +69,13 @@ export default function Home() {
     });
   }, [messages, isLoading]);
 
+  function handleTabChange(tab: "chat" | "tickets") {
+    setActiveTab(tab);
+    if (tab === "chat") {
+      setTicketError("");
+    }
+  }
+
   async function submitMessage(event?: FormEvent, quickText?: string) {
     event?.preventDefault();
     const text = (quickText ?? input).trim();
@@ -75,12 +96,18 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: nextMessages.map(({ role, content }) => ({ role, content }))
+          messages: nextMessages.map(({ role, content }) => ({ role, content })),
+          context: {
+            clarifying_questions_asked: clarifyingQuestionsAsked
+          }
         })
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error ?? "Agent error");
       pushAssistant(data.action.message, data.action);
+      setClarifyingQuestionsAsked((current) =>
+        data.action?.type === "ask_clarifying_question" ? Math.min(current + 1, 2) : 0
+      );
     } catch (error) {
       pushAssistant(
         error instanceof Error
@@ -149,7 +176,7 @@ export default function Home() {
           facility_id: facilityId,
           specialty_id: specialtyId,
           symptom_summary: symptomSummary,
-          status: "DRAFT",
+          status: "draft",
           notes: "User override specialty/facility"
         }
       });
@@ -164,6 +191,42 @@ export default function Home() {
     }
   }
 
+  async function searchTickets(event: FormEvent) {
+    event.preventDefault();
+    const hasCriteria = Object.values(ticketFilters).some((value) => value.trim().length > 0);
+    if (!hasCriteria) {
+      setTicketError("Nhập ít nhất một thông tin để tra cứu.");
+      setTicketResults([]);
+      return;
+    }
+
+    setTicketLoading(true);
+    setTicketError("");
+    try {
+      const params = new URLSearchParams();
+      if (ticketFilters.ticketId.trim()) params.set("ticket_id", ticketFilters.ticketId.trim());
+      if (ticketFilters.name.trim()) params.set("name", ticketFilters.name.trim());
+      if (ticketFilters.phone.trim()) params.set("phone", ticketFilters.phone.trim());
+      if (ticketFilters.email.trim()) params.set("email", ticketFilters.email.trim());
+      if (ticketFilters.dob.trim()) params.set("dob", ticketFilters.dob.trim());
+      if (ticketFilters.status.trim()) params.set("status", ticketFilters.status.trim());
+
+      const response = await fetch(`/api/booking?${params.toString()}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? "Booking lookup error");
+      setTicketResults(Array.isArray(data.bookings) ? data.bookings : []);
+    } catch (lookupError) {
+      setTicketError(
+        lookupError instanceof Error
+          ? lookupError.message
+          : "Không tra cứu được ticket."
+      );
+      setTicketResults([]);
+    } finally {
+      setTicketLoading(false);
+    }
+  }
+
   return (
     <main className="app-shell">
       <section className="workspace">
@@ -171,7 +234,7 @@ export default function Home() {
           <div className="brand-lockup">
             <div className="brand-mark">V</div>
             <div>
-              <p className="eyebrow">VinmecCare mock</p>
+              <p className="eyebrow">VinmecCare</p>
               <h1>AI Booking Agent</h1>
             </div>
           </div>
@@ -212,53 +275,175 @@ export default function Home() {
               <p className="eyebrow">Checkpoint 1</p>
               <h2>Đặt lịch khám từ triệu chứng</h2>
             </div>
-            <span className="session-pill">Session mock</span>
-          </header>
-
-          <div className="messages" ref={scrollRef}>
-            {messages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                facilities={facilities}
-                specialties={specialties}
-                onQuickReply={(text) => submitMessage(undefined, text)}
-                onConfirmSlot={confirmSlot}
-                onRenderForm={renderForm}
-                onRefreshSlots={refreshSlots}
-                onBookingSuccess={(action) => pushAssistant(action.message, action)}
-              />
-            ))}
-            {isLoading ? (
-              <div className="message assistant">
-                <div className="avatar">AI</div>
-                <div className="bubble typing">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-              </div>
-            ) : null}
-          </div>
-
-          <form className="composer" onSubmit={submitMessage}>
-            {piiWarning ? (
-              <div className="pii-warning">
-                Phát hiện SĐT/email/CCCD trong chat. Vui lòng xóa thông tin cá nhân và chỉ nhập
-                triệu chứng.
-              </div>
-            ) : null}
-            <div className="composer-row">
-              <input
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder="Mô tả triệu chứng, tuổi/năm sinh, cơ sở mong muốn..."
-              />
-              <button disabled={!input.trim() || Boolean(piiWarning) || isLoading} type="submit">
-                Gửi
+            <div className="tab-switcher">
+              <button
+                className={activeTab === "chat" ? "tab-pill active" : "tab-pill"}
+                type="button"
+                onClick={() => handleTabChange("chat")}
+              >
+                Chat
+              </button>
+              <button
+                className={activeTab === "tickets" ? "tab-pill active" : "tab-pill"}
+                type="button"
+                onClick={() => handleTabChange("tickets")}
+              >
+                Ticket
               </button>
             </div>
-          </form>
+          </header>
+
+          {activeTab === "chat" ? (
+            <>
+              <div className="messages" ref={scrollRef}>
+                {messages.map((message) => (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    facilities={facilities}
+                    specialties={specialties}
+                    onConfirmSlot={confirmSlot}
+                    onRenderForm={renderForm}
+                    onRefreshSlots={refreshSlots}
+                    onBookingSuccess={(action) => pushAssistant(action.message, action)}
+                  />
+                ))}
+                {isLoading ? (
+                  <div className="message assistant">
+                    <div className="avatar">AI</div>
+                    <div className="bubble typing">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <form className="composer" onSubmit={submitMessage}>
+                {piiWarning ? (
+                  <div className="pii-warning">
+                    Phát hiện SĐT/email/CCCD trong chat. Vui lòng xóa thông tin cá nhân và chỉ nhập
+                    triệu chứng.
+                  </div>
+                ) : null}
+                <div className="composer-row">
+                  <input
+                    value={input}
+                    onChange={(event) => setInput(event.target.value)}
+                    placeholder="Mô tả triệu chứng, tuổi/năm sinh, cơ sở mong muốn..."
+                  />
+                  <button disabled={!input.trim() || Boolean(piiWarning) || isLoading} type="submit">
+                    Gửi
+                  </button>
+                </div>
+              </form>
+            </>
+          ) : (
+            <div className="tickets-panel">
+              <form className="ticket-search" onSubmit={searchTickets}>
+                <div className="ticket-search-grid">
+                  <label>
+                    Ticket
+                    <input
+                      value={ticketFilters.ticketId}
+                      onChange={(event) =>
+                        setTicketFilters((current) => ({ ...current, ticketId: event.target.value }))
+                      }
+                      placeholder="VMC-..."
+                    />
+                  </label>
+                  <label>
+                    Họ tên
+                    <input
+                      value={ticketFilters.name}
+                      onChange={(event) =>
+                        setTicketFilters((current) => ({ ...current, name: event.target.value }))
+                      }
+                      placeholder="Nguyễn Văn A"
+                    />
+                  </label>
+                  <label>
+                    SĐT
+                    <input
+                      value={ticketFilters.phone}
+                      onChange={(event) =>
+                        setTicketFilters((current) => ({ ...current, phone: event.target.value }))
+                      }
+                      placeholder="0xxxxxxxxx"
+                    />
+                  </label>
+                  <label>
+                    Email
+                    <input
+                      value={ticketFilters.email}
+                      onChange={(event) =>
+                        setTicketFilters((current) => ({ ...current, email: event.target.value }))
+                      }
+                      placeholder="you@example.com"
+                    />
+                  </label>
+                  <label>
+                    Ngày sinh
+                    <input
+                      type="date"
+                      value={ticketFilters.dob}
+                      onChange={(event) =>
+                        setTicketFilters((current) => ({ ...current, dob: event.target.value }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    Trạng thái
+                    <select
+                      value={ticketFilters.status}
+                      onChange={(event) =>
+                        setTicketFilters((current) => ({ ...current, status: event.target.value }))
+                      }
+                    >
+                      <option value="">Tất cả</option>
+                      <option value="confirmed">confirmed</option>
+                      <option value="draft">draft</option>
+                      <option value="callback">callback</option>
+                      <option value="pending_review">pending_review</option>
+                      <option value="cancelled">cancelled</option>
+                    </select>
+                  </label>
+                </div>
+                {ticketError ? <p className="form-error">{ticketError}</p> : null}
+                <div className="ticket-search-actions">
+                  <button className="primary-action" disabled={ticketLoading} type="submit">
+                    {ticketLoading ? "Đang tra cứu..." : "Tra cứu ticket"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTicketFilters({
+                        ticketId: "",
+                        name: "",
+                        phone: "",
+                        email: "",
+                        dob: "",
+                        status: ""
+                      });
+                      setTicketResults([]);
+                      setTicketError("");
+                    }}
+                  >
+                    Xóa lọc
+                  </button>
+                </div>
+              </form>
+
+              <div className="ticket-results">
+                {ticketResults.length > 0 ? (
+                  ticketResults.map((booking) => <BookingCard key={booking.ticket_id} booking={booking} />)
+                ) : (
+                  <p className="muted">Chưa có kết quả tra cứu.</p>
+                )}
+              </div>
+            </div>
+          )}
         </section>
       </section>
     </main>
@@ -269,7 +454,6 @@ function MessageBubble({
   message,
   facilities,
   specialties,
-  onQuickReply,
   onConfirmSlot,
   onRenderForm,
   onRefreshSlots,
@@ -278,7 +462,6 @@ function MessageBubble({
   message: UiMessage;
   facilities: Facility[];
   specialties: Specialty[];
-  onQuickReply: (text: string) => void;
   onConfirmSlot: (slot: EnrichedSlot, draft: BookingDraft) => void;
   onRenderForm: (slot: EnrichedSlot, draft: BookingDraft) => void;
   onRefreshSlots: (facilityId: string, specialtyId: string, symptomSummary: string) => void;
@@ -296,7 +479,6 @@ function MessageBubble({
             action={message.action}
             facilities={facilities}
             specialties={specialties}
-            onQuickReply={onQuickReply}
             onConfirmSlot={onConfirmSlot}
             onRenderForm={onRenderForm}
             onRefreshSlots={onRefreshSlots}
@@ -312,7 +494,6 @@ function ActionCard({
   action,
   facilities,
   specialties,
-  onQuickReply,
   onConfirmSlot,
   onRenderForm,
   onRefreshSlots,
@@ -321,19 +502,18 @@ function ActionCard({
   action: AgentAction;
   facilities: Facility[];
   specialties: Specialty[];
-  onQuickReply: (text: string) => void;
   onConfirmSlot: (slot: EnrichedSlot, draft: BookingDraft) => void;
   onRenderForm: (slot: EnrichedSlot, draft: BookingDraft) => void;
   onRefreshSlots: (facilityId: string, specialtyId: string, symptomSummary: string) => void;
   onBookingSuccess: (action: AgentAction) => void;
 }) {
   if (action.type === "ask_clarifying_question") {
+    const questions = action.questions ?? [];
+    if (questions.length === 0) return null;
     return (
-      <div className="quick-replies">
-        {action.quickReplies?.map((reply) => (
-          <button key={reply} type="button" onClick={() => onQuickReply(reply)}>
-            {reply}
-          </button>
+      <div className="clarifying-questions">
+        {questions.map((question) => (
+          <p key={question}>{question}</p>
         ))}
       </div>
     );
@@ -550,6 +730,59 @@ function BookingForm({
         {isSubmitting ? "Đang tạo ticket..." : "Tạo ticket"}
       </button>
     </form>
+  );
+}
+
+function BookingCard({ booking }: { booking: Booking }) {
+  const dateLabel = booking.slot_date
+    ? `${formatDate(booking.slot_date)} · ${booking.slot_time || "Chưa rõ giờ"}`
+    : "Chưa có lịch hẹn";
+
+  return (
+    <article className="booking-ticket-card">
+      <div className="booking-ticket-head">
+        <div>
+          <p className="eyebrow">Ticket</p>
+          <h3>{booking.ticket_id}</h3>
+        </div>
+        <span className={`status-chip ${booking.status || "draft"}`}>{booking.status || "draft"}</span>
+      </div>
+      <div className="booking-ticket-grid">
+        <span>
+          <strong>Họ tên:</strong> {booking.name || "-"}
+        </span>
+        <span>
+          <strong>SĐT:</strong> {booking.phone || "-"}
+        </span>
+        <span>
+          <strong>Email:</strong> {booking.email || "-"}
+        </span>
+        <span>
+          <strong>Ngày sinh:</strong> {booking.dob || "-"}
+        </span>
+        <span>
+          <strong>Cơ sở:</strong> {booking.facility_name || "-"}
+        </span>
+        <span>
+          <strong>Chuyên khoa:</strong> {booking.specialty_name || "-"}
+        </span>
+        <span>
+          <strong>Bác sĩ:</strong> {booking.doctor_title ? `${booking.doctor_title} ` : ""}
+          {booking.doctor_name || "-"}
+        </span>
+        <span>
+          <strong>Giờ khám:</strong> {dateLabel}
+        </span>
+      </div>
+      <p className="booking-ticket-note">
+        <strong>Triệu chứng:</strong> {booking.symptom_summary || "-"}
+      </p>
+      {booking.notes ? (
+        <p className="booking-ticket-note">
+          <strong>Ghi chú:</strong> {booking.notes}
+        </p>
+      ) : null}
+    </article>
   );
 }
 
