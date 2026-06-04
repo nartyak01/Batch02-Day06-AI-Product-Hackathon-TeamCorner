@@ -1,11 +1,12 @@
 """FastAPI — /tools/* for agent, /form/* for manual booking form."""
 
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
 from typing import Any
 
-from ..vinmec_agent import run_agent_turn
-from ..tools.medical import (
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+
+from src.vinmec_agent import run_agent_turn
+from src.tools.medical import (
     check_red_flags,
     get_available_slots,
     get_facilities,
@@ -21,7 +22,7 @@ from ..tools.medical import (
     get_form_slots,
     get_booking_form_context,
 )
-from ..tools.booking import submit_booking, list_bookings, get_booking, update_booking
+from src.tools.booking import submit_booking, list_bookings, get_booking, update_booking
 
 app = FastAPI(title="VinmecCare API", version="0.2.0")
 
@@ -76,6 +77,13 @@ def api_reference_data():
 
 @app.post("/agent/turn")
 def api_agent_turn(body: AgentTurnBody):
+    from src.utils.flow_log import log_event
+
+    log_event(
+        "api_agent_turn",
+        history_turns=len(body.history),
+        context_keys=sorted(body.context.keys()) if body.context else [],
+    )
     return run_agent_turn(
         user_message=body.user_message,
         history=body.history,
@@ -201,7 +209,17 @@ class UpdateBookingBody(BaseModel):
 @app.post("/bookings")
 def api_submit_booking(body: SubmitBookingBody):
     """Đặt lịch — ghi PII vào bookings.csv, không qua agent."""
+    from src.utils.flow_log import log_event
+
     result = submit_booking(body.model_dump())
+    log_event(
+        "booking_submit",
+        ok=result["ok"],
+        ticket_id=result.get("ticket_id") or "",
+        status=body.status,
+        specialty_id=body.specialty_id,
+        facility_id=body.facility_id,
+    )
     if not result["ok"]:
         raise HTTPException(400, result["message"])
     return result

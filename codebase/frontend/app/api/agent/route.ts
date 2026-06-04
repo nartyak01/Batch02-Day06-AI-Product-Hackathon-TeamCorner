@@ -51,7 +51,7 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json({ action: mapAgentResponseToAction(data) });
+    return NextResponse.json({ action: mapAgentResponseToAction(data), meta: data.meta ?? {} });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Agent error" },
