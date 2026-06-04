@@ -16,6 +16,16 @@ from vinmec_agent.domain.response import base_response, coerce_float
 from vinmec_agent.domain.text import contains_normalized_keyword, normalize_vietnamese
 
 
+AVAILABLE_LLM_TOOLS = [
+    "ask_clarifying_question",
+    "analyze_intake",
+    "suggest_specialty",
+    "get_available_slots",
+    "create_booking_draft",
+    "final_answer",
+]
+
+
 class BookingAgent:
     def __init__(self, tools: AgentTools, llm_client: LLMClient) -> None:
         self.tools = tools
@@ -31,6 +41,41 @@ class BookingAgent:
         context = context or {}
         message = (user_message or "").strip()
 
+        if not message:
+            return base_response(
+                reply="Bạn vui lòng mô tả ngắn gọn triệu chứng hiện tại để tôi hỗ trợ gợi ý chuyên khoa.",
+                state=STATE_NEED_MORE_INFO,
+                needs_more_info=True,
+                questions=["Bạn đang gặp triệu chứng gì và triệu chứng bắt đầu từ khi nào?"],
+            )
+
+        pii_hits = detect_pii(message)
+        if pii_hits:
+            return base_response(
+                reply=(
+                    "Phát hiện thông tin cá nhân trong tin nhắn. Vui lòng xóa SĐT/email/CCCD khỏi chat. "
+                    "AI chỉ cần biết triệu chứng; thông tin cá nhân sẽ được nhập ở form đặt lịch riêng."
+                ),
+                state=STATE_PII_BLOCKED,
+                needs_more_info=False,
+                meta={"pii_types": pii_hits, "guard": "rule_first_pii"},
+            )
+
+        red_flag_result = self.tools.detect_red_flags(message)
+        if red_flag_result["red_flag_risk"]:
+            response = self._build_escalation_response(message, red_flag_result, context)
+            response.setdefault("meta", {})
+            response["meta"]["guard"] = "rule_first_red_flag"
+            return response
+
+        if context.get("selected_slot_id") and context.get("selected_specialty_id"):
+            return self._build_ready_for_form_response(
+                message,
+                context["selected_specialty_id"],
+                context["selected_slot_id"],
+                context,
+            )
+
         react_state: dict[str, Any] = {
             "message": message,
             "history": history,
@@ -39,17 +84,20 @@ class BookingAgent:
             "trace": [],
         }
 
-        # Explicit ReAct loop:
-        # 1. Decide the next action from current observations.
-        # 2. Run that tool/action.
-        # 3. Store observation.
-        # 4. Repeat until a final response is produced.
-        for step_index in range(12):
-            action = self._decide_next_action(react_state)
-            observation = self._run_react_action(action, react_state)
+        for step_index in range(6):
+            plan = self.llm_client.plan_next_action(
+                user_message=message,
+                history=history,
+                context=context,
+                observations=react_state["observations"],
+                available_tools=AVAILABLE_LLM_TOOLS,
+            )
+            action, action_input, planner = self._select_planned_action(plan, react_state)
+            observation = self._run_tool_action(action, action_input, react_state)
             react_state["trace"].append(
                 {
                     "step": step_index + 1,
+                    "planner": planner,
                     "action": action,
                     "observation": observation.get("summary", "ok"),
                 }
@@ -61,162 +109,123 @@ class BookingAgent:
                 final_response["meta"]["react_trace"] = react_state["trace"]
                 return final_response
 
-        return base_response(
-            reply="Agent chưa hoàn tất được vòng xử lý. Vui lòng thử lại hoặc chuyển sang callback.",
-            state=STATE_NEED_MORE_INFO,
-            needs_more_info=True,
-            meta={"react_trace": react_state["trace"], "error": "max_react_steps_reached"},
+        return self._build_final_booking_response(
+            react_state,
+            fallback_reply="Agent chưa hoàn tất được vòng ReAct. Vui lòng thử lại hoặc chuyển sang callback.",
+            fallback_state=STATE_NEED_MORE_INFO,
         )
 
-    def _decide_next_action(self, react_state: dict[str, Any]) -> str:
+    def _select_planned_action(
+        self,
+        plan: dict[str, Any] | None,
+        react_state: dict[str, Any],
+    ) -> tuple[str, dict[str, Any], str]:
+        raw_action = plan.get("action") if isinstance(plan, dict) else None
+        raw_input = plan.get("action_input") if isinstance(plan, dict) else None
+        action_input = dict(raw_input) if isinstance(raw_input, dict) else {}
+        if isinstance(plan, dict) and plan.get("assistant_reply") and "assistant_reply" not in action_input:
+            action_input["assistant_reply"] = plan["assistant_reply"]
+        if raw_action in AVAILABLE_LLM_TOOLS and self._action_preconditions_met(str(raw_action), react_state):
+            observations = react_state["observations"]
+            if isinstance(plan, dict) and plan.get("planner_model"):
+                observations["planner_model"] = plan["planner_model"]
+            return str(raw_action), action_input, "gemini"
+        return self._fallback_next_action(react_state), {}, "fallback"
+
+    def _action_preconditions_met(self, action: str, react_state: dict[str, Any]) -> bool:
+        observations = react_state["observations"]
+        if action == "suggest_specialty":
+            return bool(observations.get("symptom_summary"))
+        if action == "get_available_slots":
+            return bool(observations.get("suggestions"))
+        if action == "create_booking_draft":
+            return bool(observations.get("symptom_summary") and observations.get("suggestions") and observations.get("slots"))
+        if action == "final_answer":
+            return True
+        if action == "ask_clarifying_question":
+            return True
+        if action == "analyze_intake":
+            return "symptom_summary" not in observations
+        return False
+
+    def _fallback_next_action(self, react_state: dict[str, Any]) -> str:
         message = react_state["message"]
+        history = react_state["history"]
         context = react_state["context"]
         observations = react_state["observations"]
 
-        if not message:
-            return "final_empty_message"
-        if "pii_hits" not in observations:
-            return "check_pii"
-        if observations["pii_hits"]:
-            return "final_pii_blocked"
-        if "red_flag_result" not in observations:
-            return "check_red_flags"
-        if observations["red_flag_result"]["red_flag_risk"]:
-            return "final_escalation"
-        if "override_specialty" not in observations:
-            return "check_specialty_override"
-        if observations["override_specialty"]:
-            return "final_specialty_override"
-        if context.get("selected_slot_id") and context.get("selected_specialty_id"):
-            return "final_ready_for_form"
-        if "needs_more_info" not in observations:
-            return "check_clarifying_need"
-        if observations["needs_more_info"]:
-            return "final_clarifying_question"
-        if "gemini_result" not in observations:
-            return "llm_analyze_intake"
-        if "facility_id" not in observations:
-            return "infer_facility"
+        if not observations.get("clarifying_checked"):
+            observations["clarifying_checked"] = True
+            if self._should_ask_more_info(message, history, context):
+                return "ask_clarifying_question"
+        if "symptom_summary" not in observations:
+            return "analyze_intake"
         if "suggestions" not in observations:
             return "suggest_specialty"
         if "slots" not in observations:
             return "get_available_slots"
         if "booking_draft" not in observations:
             return "create_booking_draft"
-        return "final_booking_suggestion"
+        return "final_answer"
 
-    def _run_react_action(self, action: str, react_state: dict[str, Any]) -> dict[str, Any]:
+    def _run_tool_action(
+        self,
+        action: str,
+        action_input: dict[str, Any],
+        react_state: dict[str, Any],
+    ) -> dict[str, Any]:
         message = react_state["message"]
         history = react_state["history"]
         context = react_state["context"]
         observations = react_state["observations"]
 
-        if action == "final_empty_message":
-            return {
-                "summary": "asked_user_for_initial_symptom",
-                "final_response": base_response(
-                    reply="Bạn vui lòng mô tả ngắn gọn triệu chứng hiện tại để tôi hỗ trợ gợi ý chuyên khoa.",
-                    state=STATE_NEED_MORE_INFO,
-                    needs_more_info=True,
-                    questions=["Bạn đang gặp triệu chứng gì và triệu chứng bắt đầu từ khi nào?"],
-                ),
-            }
-
-        if action == "check_pii":
-            pii_hits = detect_pii(message)
-            observations["pii_hits"] = pii_hits
-            return {"summary": "pii_detected" if pii_hits else "pii_clear"}
-
-        if action == "final_pii_blocked":
-            return {
-                "summary": "blocked_before_llm",
-                "final_response": base_response(
-                    reply=(
-                        "Phát hiện thông tin cá nhân trong tin nhắn. Vui lòng xóa SĐT/email/CCCD khỏi chat. "
-                        "AI chỉ cần biết triệu chứng; thông tin cá nhân sẽ được nhập ở form đặt lịch riêng."
-                    ),
-                    state=STATE_PII_BLOCKED,
-                    needs_more_info=False,
-                    meta={"pii_types": observations["pii_hits"]},
-                ),
-            }
-
-        if action == "check_red_flags":
-            red_flag_result = self.tools.detect_red_flags(message)
-            observations["red_flag_result"] = red_flag_result
-            return {"summary": "red_flag_detected" if red_flag_result["red_flag_risk"] else "red_flag_clear"}
-
-        if action == "final_escalation":
-            return {
-                "summary": "escalated_to_callback",
-                "final_response": self._build_escalation_response(message, observations["red_flag_result"], context),
-            }
-
-        if action == "check_specialty_override":
-            override_specialty = self.tools.detect_specialty_override(message)
-            observations["override_specialty"] = override_specialty
-            return {"summary": "override_detected" if override_specialty else "no_override"}
-
-        if action == "final_specialty_override":
-            return {
-                "summary": "refreshed_slots_for_user_override",
-                "final_response": self._build_override_response(message, observations["override_specialty"], context),
-            }
-
-        if action == "final_ready_for_form":
-            return {
-                "summary": "selected_slot_ready_for_form",
-                "final_response": self._build_ready_for_form_response(
-                    message,
-                    context["selected_specialty_id"],
-                    context["selected_slot_id"],
-                    context,
-                ),
-            }
-
-        if action == "check_clarifying_need":
-            needs_more_info = self._should_ask_more_info(message, history, context)
-            observations["needs_more_info"] = needs_more_info
-            observations["questions"] = self._build_clarifying_questions(message, context) if needs_more_info else []
-            return {"summary": "needs_more_info" if needs_more_info else "enough_info"}
-
-        if action == "final_clarifying_question":
+        if action == "ask_clarifying_question":
+            questions = action_input.get("questions")
+            if not isinstance(questions, list) or not questions:
+                questions = self._build_clarifying_questions(message, context)
+            reply = action_input.get("assistant_reply") or "Để gợi ý đúng chuyên khoa hơn, tôi cần thêm một chút thông tin."
             return {
                 "summary": "asked_clarifying_questions",
                 "final_response": base_response(
-                    reply="Để gợi ý đúng chuyên khoa hơn, tôi cần thêm một chút thông tin.",
+                    reply=str(reply),
                     state=STATE_NEED_MORE_INFO,
                     needs_more_info=True,
-                    questions=observations["questions"],
+                    questions=[str(question) for question in questions[:2]],
                 ),
             }
 
-        if action == "llm_analyze_intake":
+        if action == "analyze_intake":
             gemini_result = self.llm_client.analyze_intake(message, history, context)
             observations["gemini_result"] = gemini_result
+            input_confidence = coerce_float(action_input.get("confidence"), default=0.0)
             observations["symptom_summary"] = (
-                gemini_result.get("symptom_summary")
+                str(action_input.get("symptom_summary"))
+                if action_input.get("symptom_summary")
+                else gemini_result.get("symptom_summary")
                 if gemini_result
                 else self._build_fallback_symptom_summary(message)
             )
             observations["confidence"] = (
-                coerce_float(gemini_result.get("confidence"), default=0.68)
+                input_confidence
+                or (coerce_float(gemini_result.get("confidence"), default=0.68) if gemini_result else 0.62)
                 if gemini_result
-                else 0.62
+                else input_confidence or 0.62
             )
-            return {"summary": "llm_result" if gemini_result else "fallback_symptom_summary"}
-
-        if action == "infer_facility":
-            observations["facility_id"] = self.tools.infer_facility_id(message, context)
-            return {"summary": f"facility={observations['facility_id']}"}
+            observations["facility_id"] = (
+                action_input.get("facility_id")
+                or context.get("preferred_facility_id")
+                or context.get("facility_id")
+                or self.tools.infer_facility_id(message, context)
+            )
+            return {"summary": "symptom_summary_created"}
 
         if action == "suggest_specialty":
             suggestions = self.tools.suggest_specialty(
                 symptom_summary=observations["symptom_summary"],
                 user_message=message,
                 age_or_birth_year=context.get("age_or_birth_year"),
-                facility_id=observations["facility_id"],
-                gemini_result=observations["gemini_result"],
+                facility_id=observations.get("facility_id"),
+                gemini_result=observations.get("gemini_result"),
             )
             if not suggestions:
                 suggestions = [
@@ -231,50 +240,86 @@ class BookingAgent:
             return {"summary": f"suggestions={len(suggestions)}"}
 
         if action == "get_available_slots":
-            top_specialty = observations["suggestions"][0]
+            specialty_id = action_input.get("specialty_id") or observations["suggestions"][0]["specialty_id"]
             observations["slots"] = self.tools.get_available_slots(
-                top_specialty["specialty_id"],
-                observations["facility_id"],
+                str(specialty_id),
+                observations.get("facility_id") or self.tools.infer_facility_id(message, context),
             )
             return {"summary": f"slots={len(observations['slots'])}"}
 
         if action == "create_booking_draft":
             top_specialty = observations["suggestions"][0]
             slots = observations["slots"]
+            selected_slot_id = action_input.get("slot_id") or slots[0]["slot_id"] if slots else None
             observations["booking_draft"] = self.tools.create_booking_draft(
                 symptom_summary=observations["symptom_summary"],
-                facility_id=observations["facility_id"],
-                specialty_id=top_specialty["specialty_id"],
-                slot_id=slots[0]["slot_id"] if len(slots) == 1 else None,
-                status="draft",
+                facility_id=observations.get("facility_id"),
+                specialty_id=action_input.get("specialty_id") or top_specialty["specialty_id"],
+                slot_id=selected_slot_id if len(slots) == 1 else action_input.get("slot_id"),
+                status=action_input.get("status") or "draft",
             )
-            return {"summary": "booking_draft_created"}
-
-        if action == "final_booking_suggestion":
-            slots = observations["slots"]
-            state = STATE_READY_FOR_FORM if len(slots) == 1 else STATE_SUGGESTING_SLOTS
             return {
-                "summary": "returned_booking_suggestion",
-                "final_response": base_response(
-                    reply=self._build_booking_reply(observations["suggestions"], slots, observations["facility_id"]),
-                    state=state,
-                    symptom_summary=observations["symptom_summary"],
-                    confidence=observations["confidence"],
-                    red_flag_risk=False,
-                    suggested_specialties=observations["suggestions"],
-                    slots=slots,
-                    booking_draft=observations["booking_draft"],
-                    needs_more_info=False,
-                    meta={
-                        "model_used": observations["gemini_result"].get("model_used")
-                        if observations["gemini_result"]
-                        else "fallback_rules",
-                        "fallback_used": observations["gemini_result"] is None,
-                    },
+                "summary": "booking_draft_created",
+                "final_response": self._build_final_booking_response(react_state),
+            }
+
+        if action == "final_answer":
+            return {
+                "summary": "returned_final_answer",
+                "final_response": self._build_final_booking_response(
+                    react_state,
+                    fallback_reply=action_input.get("assistant_reply") or "Tôi cần thêm thông tin để gợi ý lịch khám phù hợp.",
+                    fallback_state=STATE_NEED_MORE_INFO,
                 ),
             }
 
         return {"summary": f"unknown_action={action}"}
+
+    def _build_final_booking_response(
+        self,
+        react_state: dict[str, Any],
+        fallback_reply: str | None = None,
+        fallback_state: str = STATE_NEED_MORE_INFO,
+    ) -> dict[str, Any]:
+        observations = react_state["observations"]
+        slots = observations.get("slots", [])
+        suggestions = observations.get("suggestions", [])
+        booking_draft = observations.get("booking_draft")
+
+        if booking_draft and suggestions:
+            state = STATE_READY_FOR_FORM if len(slots) == 1 else STATE_SUGGESTING_SLOTS
+            return {
+                **base_response(
+                    reply=self._build_booking_reply(suggestions, slots, observations.get("facility_id")),
+                    state=state,
+                    symptom_summary=observations.get("symptom_summary", ""),
+                    confidence=coerce_float(observations.get("confidence"), 0.0),
+                    red_flag_risk=False,
+                    suggested_specialties=suggestions,
+                    slots=slots,
+                    booking_draft=booking_draft,
+                    needs_more_info=False,
+                    meta={
+                        "planner_model": observations.get("planner_model"),
+                        "model_used": observations.get("gemini_result", {}).get("model_used")
+                        if observations.get("gemini_result")
+                        else "fallback_rules",
+                        "fallback_used": observations.get("gemini_result") is None,
+                    },
+                )
+            }
+
+        return base_response(
+            reply=fallback_reply or "Tôi cần thêm thông tin để gợi ý lịch khám phù hợp.",
+            state=fallback_state,
+            symptom_summary=observations.get("symptom_summary", ""),
+            confidence=coerce_float(observations.get("confidence"), 0.0),
+            suggested_specialties=suggestions,
+            slots=slots,
+            needs_more_info=True,
+            questions=self._build_clarifying_questions(react_state["message"], react_state["context"]),
+            meta={"fallback_used": True},
+        )
 
     def _build_escalation_response(
         self,

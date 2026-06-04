@@ -17,6 +17,29 @@ class GeminiClient(LLMClient):
         self.api_key = (api_key or os.getenv("GEMINI_API_KEY", "")).strip()
         self.model_name = (model_name or os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")).strip()
 
+    def plan_next_action(
+        self,
+        user_message: str,
+        history: list[dict[str, Any]],
+        context: dict[str, Any],
+        observations: dict[str, Any],
+        available_tools: list[str],
+    ) -> dict[str, Any] | None:
+        if not self.api_key:
+            return None
+
+        prompt = self._build_planner_prompt(user_message, history, context, observations, available_tools)
+        try:
+            result_text = self._call_google_genai(prompt)
+            parsed = parse_json_object(result_text)
+            if not isinstance(parsed, dict):
+                return None
+            parsed["planner_model"] = self.model_name
+            return parsed
+        except Exception as exc:  # pragma: no cover - external service safety
+            self._debug_log(f"Gemini planner failed: {exc}")
+            return None
+
     def analyze_intake(
         self,
         user_message: str,
@@ -37,6 +60,39 @@ class GeminiClient(LLMClient):
         except Exception as exc:  # pragma: no cover - external service safety
             self._debug_log(f"Gemini failed: {exc}")
             return None
+
+    def _build_planner_prompt(
+        self,
+        user_message: str,
+        history: list[dict[str, Any]],
+        context: dict[str, Any],
+        observations: dict[str, Any],
+        available_tools: list[str],
+    ) -> str:
+        safe_history = build_safe_history(history)
+        return f"""
+{SYSTEM_PROMPT}
+
+Bạn đang là planner trong vòng ReAct. Hệ thống Python đã kiểm tra PII/red flag trước khi gọi bạn.
+Hãy chọn đúng 1 action tiếp theo từ danh sách available_tools.
+
+available_tools:
+{json.dumps(available_tools, ensure_ascii=False)}
+
+observations an toàn hiện có:
+{json.dumps(observations, ensure_ascii=False)}
+
+context hiện có:
+{json.dumps(context, ensure_ascii=False)}
+
+history đã lọc PII:
+{json.dumps(safe_history[-6:], ensure_ascii=False)}
+
+user_message:
+{user_message}
+
+Chỉ trả JSON action, không markdown, không giải thích ngoài JSON.
+"""
 
     def _build_prompt(
         self,

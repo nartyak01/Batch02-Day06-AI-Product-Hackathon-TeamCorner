@@ -36,6 +36,15 @@ class AgentTools(Protocol):
 
 
 class LLMClient(Protocol):
+    def plan_next_action(
+        self,
+        user_message: str,
+        history: list[dict[str, Any]],
+        context: dict[str, Any],
+        observations: dict[str, Any],
+        available_tools: list[str],
+    ) -> dict[str, Any] | None: ...
+
     def analyze_intake(
         self,
         user_message: str,

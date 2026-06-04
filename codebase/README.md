@@ -20,11 +20,13 @@ codebase/
 
 Agent hiện có:
 
-- ReAct-style flow: intake triệu chứng -> kiểm tra red flag/PII -> Gemini -> mock tools -> `booking_draft`.
+- Hybrid ReAct flow: rule guard bắt buộc kiểm tra PII/red flag trước LLM, sau đó Gemini planner chọn tool nghiệp vụ.
+- Tool loop sau guard: `analyze_intake` -> `suggest_specialty` -> `get_available_slots` -> `create_booking_draft` -> final response.
 - System prompt bảo vệ privacy: không hỏi/lưu/nhắc lại họ tên, SĐT, email, CCCD.
 - Fallback rule-based nếu thiếu API key, Gemini lỗi, quota lỗi hoặc SDK chưa cài.
 - CLI JSON adapter để Next.js gọi bằng `child_process`, không cần tách backend API.
 - Mock tools/database tạm: facilities, specialties, doctors, slots, red flags, booking draft.
+- Output có `meta.react_trace` để demo planner đã chọn tool nào; khi không có Gemini key, trace ghi `planner: "fallback"`.
 
 ### Cài dependency
 
