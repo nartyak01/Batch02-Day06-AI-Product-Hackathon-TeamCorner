@@ -63,11 +63,15 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    scrollToBottom();
+  }, [messages, isLoading]);
+
+  function scrollToBottom() {
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
       behavior: "smooth"
     });
-  }, [messages, isLoading]);
+  }
 
   function handleTabChange(tab: "chat" | "tickets") {
     setActiveTab(tab);
@@ -295,29 +299,40 @@ export default function Home() {
 
           {activeTab === "chat" ? (
             <>
-              <div className="messages" ref={scrollRef}>
-                {messages.map((message) => (
-                  <MessageBubble
-                    key={message.id}
-                    message={message}
-                    facilities={facilities}
-                    specialties={specialties}
-                    onConfirmSlot={confirmSlot}
-                    onRenderForm={renderForm}
-                    onRefreshSlots={refreshSlots}
-                    onBookingSuccess={(action) => pushAssistant(action.message, action)}
-                  />
-                ))}
-                {isLoading ? (
-                  <div className="message assistant">
-                    <div className="avatar">AI</div>
-                    <div className="bubble typing">
-                      <span />
-                      <span />
-                      <span />
+              <div className="chat-scroll-region">
+                <div className="messages" ref={scrollRef}>
+                  {messages.map((message) => (
+                    <MessageBubble
+                      key={message.id}
+                      message={message}
+                      facilities={facilities}
+                      specialties={specialties}
+                      onConfirmSlot={confirmSlot}
+                      onRenderForm={renderForm}
+                      onRefreshSlots={refreshSlots}
+                      onBookingSuccess={(action) => pushAssistant(action.message, action)}
+                    />
+                  ))}
+                  {isLoading ? (
+                    <div className="message assistant">
+                      <div className="avatar">AI</div>
+                      <div className="bubble typing">
+                        <span />
+                        <span />
+                        <span />
+                      </div>
                     </div>
-                  </div>
-                ) : null}
+                  ) : null}
+                </div>
+                <button
+                  aria-label="Kéo xuống cuối chat"
+                  className="chat-scroll-bottom-button"
+                  onClick={scrollToBottom}
+                  title="Kéo xuống cuối chat"
+                  type="button"
+                >
+                  ↓
+                </button>
               </div>
 
               <form className="composer" onSubmit={submitMessage}>
@@ -437,7 +452,19 @@ export default function Home() {
 
               <div className="ticket-results">
                 {ticketResults.length > 0 ? (
-                  ticketResults.map((booking) => <BookingCard key={booking.ticket_id} booking={booking} />)
+                  ticketResults.map((booking) => (
+                    <BookingCard
+                      key={booking.ticket_id}
+                      booking={booking}
+                      onBookingUpdated={(updatedBooking) =>
+                        setTicketResults((current) =>
+                          current.map((item) =>
+                            item.ticket_id === updatedBooking.ticket_id ? updatedBooking : item
+                          )
+                        )
+                      }
+                    />
+                  ))
                 ) : (
                   <p className="muted">Chưa có kết quả tra cứu.</p>
                 )}
@@ -733,10 +760,79 @@ function BookingForm({
   );
 }
 
-function BookingCard({ booking }: { booking: Booking }) {
+function BookingCard({
+  booking,
+  onBookingUpdated
+}: {
+  booking: Booking;
+  onBookingUpdated: (booking: Booking) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [editForm, setEditForm] = useState({
+    name: booking.name ?? "",
+    phone: booking.phone ?? "",
+    email: booking.email ?? "",
+    dob: booking.dob ?? "",
+    notes: booking.notes ?? ""
+  });
   const dateLabel = booking.slot_date
     ? `${formatDate(booking.slot_date)} · ${booking.slot_time || "Chưa rõ giờ"}`
     : "Chưa có lịch hẹn";
+
+  async function patchBooking(patch: Partial<Booking>) {
+    setIsSaving(true);
+    setActionError("");
+    try {
+      const response = await fetch(`/api/booking?ticket_id=${encodeURIComponent(booking.ticket_id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch)
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? data.message ?? "Update booking error");
+      const updatedBooking = data.booking as Booking;
+      onBookingUpdated(updatedBooking);
+      setEditForm({
+        name: updatedBooking.name ?? "",
+        phone: updatedBooking.phone ?? "",
+        email: updatedBooking.email ?? "",
+        dob: updatedBooking.dob ?? "",
+        notes: updatedBooking.notes ?? ""
+      });
+      setIsEditing(false);
+    } catch (error) {
+      setActionError(
+        error instanceof Error ? error.message : "Không cập nhật được ticket."
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function resetEditForm() {
+    setEditForm({
+      name: booking.name ?? "",
+      phone: booking.phone ?? "",
+      email: booking.email ?? "",
+      dob: booking.dob ?? "",
+      notes: booking.notes ?? ""
+    });
+    setActionError("");
+    setIsEditing(false);
+  }
+
+  async function submitEdit(event: FormEvent) {
+    event.preventDefault();
+    await patchBooking(editForm);
+  }
+
+  async function cancelTicket() {
+    const confirmed = window.confirm("Bạn chắc chắn muốn hủy ticket này?");
+    if (!confirmed) return;
+    await patchBooking({ status: "cancelled" });
+  }
 
   return (
     <article className="booking-ticket-card">
@@ -777,11 +873,94 @@ function BookingCard({ booking }: { booking: Booking }) {
       <p className="booking-ticket-note">
         <strong>Triệu chứng:</strong> {booking.symptom_summary || "-"}
       </p>
-      {booking.notes ? (
-        <p className="booking-ticket-note">
-          <strong>Ghi chú:</strong> {booking.notes}
-        </p>
-      ) : null}
+      {isEditing ? (
+        <form className="ticket-edit-form" onSubmit={submitEdit}>
+          <div className="ticket-search-grid">
+            <label>
+              Họ tên
+              <input
+                required
+                value={editForm.name}
+                onChange={(event) =>
+                  setEditForm((current) => ({ ...current, name: event.target.value }))
+                }
+              />
+            </label>
+            <label>
+              SĐT
+              <input
+                required
+                value={editForm.phone}
+                onChange={(event) =>
+                  setEditForm((current) => ({ ...current, phone: event.target.value }))
+                }
+              />
+            </label>
+            <label>
+              Email
+              <input
+                required
+                type="email"
+                value={editForm.email}
+                onChange={(event) =>
+                  setEditForm((current) => ({ ...current, email: event.target.value }))
+                }
+              />
+            </label>
+            <label>
+              Ngày sinh
+              <input
+                required
+                type="date"
+                value={editForm.dob}
+                onChange={(event) =>
+                  setEditForm((current) => ({ ...current, dob: event.target.value }))
+                }
+              />
+            </label>
+          </div>
+          <label>
+            Ghi chú
+            <textarea
+              value={editForm.notes}
+              onChange={(event) =>
+                setEditForm((current) => ({ ...current, notes: event.target.value }))
+              }
+            />
+          </label>
+          {actionError ? <p className="form-error">{actionError}</p> : null}
+          <div className="ticket-card-actions">
+            <button className="primary-action" disabled={isSaving} type="submit">
+              {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
+            </button>
+            <button disabled={isSaving} type="button" onClick={resetEditForm}>
+              Bỏ qua
+            </button>
+          </div>
+        </form>
+      ) : (
+        <>
+          {booking.notes ? (
+            <p className="booking-ticket-note">
+              <strong>Ghi chú:</strong> {booking.notes}
+            </p>
+          ) : null}
+          {actionError ? <p className="form-error">{actionError}</p> : null}
+          <div className="ticket-card-actions">
+            <button type="button" onClick={() => setIsEditing(true)}>
+              Sửa ticket
+            </button>
+            <button
+              className="danger-action"
+              disabled={isSaving || booking.status === "cancelled"}
+              type="button"
+              onClick={cancelTicket}
+            >
+              {booking.status === "cancelled" ? "Đã hủy" : "Hủy ticket"}
+            </button>
+          </div>
+        </>
+      )}
     </article>
   );
 }

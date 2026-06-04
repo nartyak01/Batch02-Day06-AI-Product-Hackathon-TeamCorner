@@ -2,3 +2,4 @@ ticket_id,created_at,name,phone,email,dob,facility_id,specialty_id,doctor_id,slo
 VIN-45683860,2026-06-04T04:01:23.860Z,Nguyễn Văn A,0123124994,mail@example.com,1980-12-01,fac_times_city,spec_pediatrics,doc_pediatrics_01,slot_013,"Assistant: Rất tiếc khi nghe bé đang không khỏe. Để mình hỗ trợ tốt nhất, bạn cho mình biết thêm bé bao nhiêu tuổi và bạn muốn đưa bé đi khám tại cơ sở Vinmec nào (ví dụ: Hà Nội, TP.HCM, Đà Nẵng...)?
 
 *Tóm tắt: Trẻ em sốt và ho từ tối qua, cần tư vấn chuyên khoa Nhi.*",DRAFT,None,2026-06-04T04:01:23.860Z
+VMC-20260604-0002,2026-06-04T08:13:20Z,Nguyễn Văn A,022934314,mail@example.com,1980-12-01,times_city,tai_tao_te_bao,bs_tai_tao_te_bao_01,slot_tai_tao_te_bao_01_01,,draft,,2026-06-04T08:14:00Z

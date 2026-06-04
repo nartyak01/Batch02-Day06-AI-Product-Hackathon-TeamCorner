@@ -15,6 +15,7 @@ class UpdateBookingInput(TypedDict, total=False):
     email: str
     dob: str
     notes: str
+    status: str
 
 
 class UpdateBookingResult(TypedDict):
@@ -23,7 +24,8 @@ class UpdateBookingResult(TypedDict):
     message: str
 
 
-ALLOWED_PATCH = frozenset({"name", "phone", "email", "dob", "notes"})
+ALLOWED_PATCH = frozenset({"name", "phone", "email", "dob", "notes", "status"})
+ALLOWED_STATUS = frozenset({"draft", "confirmed", "callback", "pending_review", "cancelled"})
 
 
 def update_booking(ticket_id: str, data: UpdateBookingInput) -> UpdateBookingResult:
@@ -35,6 +37,9 @@ def update_booking(ticket_id: str, data: UpdateBookingInput) -> UpdateBookingRes
     for key in ALLOWED_PATCH:
         if key in data and data[key] is not None:
             patch[key] = str(data[key]).strip()
+
+    if "status" in patch and patch["status"] not in ALLOWED_STATUS:
+        return {"ok": False, "booking": existing, "message": "Trạng thái ticket không hợp lệ"}
 
     if not patch:
         return {"ok": False, "booking": existing, "message": "Không có trường cần cập nhật"}

@@ -195,6 +195,7 @@ class UpdateBookingBody(BaseModel):
     email: str | None = None
     dob: str | None = None
     notes: str | None = None
+    status: str | None = None
 
 
 @app.post("/bookings")
