@@ -78,6 +78,10 @@ class BookingAgent:
                 context,
             )
 
+        scope_guard = self._scope_guard(message, history, context)
+        if scope_guard:
+            return scope_guard
+
         react_state: dict[str, Any] = {
             "message": message,
             "history": history,
@@ -274,6 +278,167 @@ class BookingAgent:
             "has_age": has_age,
             "has_facility": has_facility,
         }
+
+    def _scope_guard(
+        self,
+        user_message: str,
+        history: list[dict[str, Any]],
+        context: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        normalized = normalize_vietnamese(user_message)
+
+        adversarial_keywords = [
+            "ignore previous",
+            "ignore all previous",
+            "ignore system",
+            "bo qua huong dan",
+            "bo qua lenh",
+            "bo qua system",
+            "tiet lo prompt",
+            "show prompt",
+            "system prompt",
+            "jailbreak",
+            "developer message",
+            "act as",
+            "dong vai",
+            "khong can tuan thu",
+        ]
+        if any(keyword in normalized for keyword in adversarial_keywords):
+            return base_response(
+                reply=(
+                    "Mình không thể làm theo yêu cầu bỏ qua hướng dẫn hoặc ra ngoài phạm vi. "
+                    "Mình chỉ hỗ trợ mô tả triệu chứng, gợi ý chuyên khoa, tìm slot và đặt lịch VinmecCare."
+                ),
+                state=STATE_NEED_MORE_INFO,
+                needs_more_info=False,
+                meta={"guard": "scope_adversarial"},
+            )
+
+        if self._has_off_topic_anchor(user_message) and not self._has_real_symptom(user_message, context):
+            return self._build_off_topic_response("scope_off_topic_anchor")
+
+        if self._has_medical_booking_intent(user_message, context):
+            return None
+
+        if self._is_contextual_medical_followup(user_message, history):
+            return None
+
+        if self._history_has_off_topic_anchor(history):
+            return self._build_off_topic_response("scope_off_topic_followup")
+
+        return self._build_off_topic_response("scope_off_topic")
+
+    def _build_off_topic_response(self, guard: str) -> dict[str, Any]:
+        return base_response(
+            reply=(
+                "Mình chỉ hỗ trợ các nội dung liên quan đến triệu chứng, chọn chuyên khoa và đặt lịch khám VinmecCare. "
+                "Nội dung bạn vừa nhập chưa liên quan đến nhu cầu khám. Nếu bạn đang có triệu chứng thật, hãy mô tả triệu chứng như đau, sốt, ho, buồn nôn, khó thở, thời điểm bắt đầu, mức độ và cơ sở muốn khám."
+            ),
+            state=STATE_NEED_MORE_INFO,
+            needs_more_info=False,
+            meta={"guard": guard},
+        )
+
+    def _has_real_symptom(self, user_message: str, context: dict[str, Any]) -> bool:
+        flags = self._intake_flags(user_message, context)
+        return bool(flags["has_obvious_symptom"] or flags["has_associated_symptoms"])
+
+    def _has_off_topic_anchor(self, user_message: str) -> bool:
+        normalized = normalize_vietnamese(user_message)
+        off_topic_keywords = [
+            "milo",
+            "tra sua",
+            "cafe",
+            "ca phe",
+            "coca",
+            "pepsi",
+            "nuoc ngot",
+            "bia",
+            "ruou",
+            "pizza",
+            "banh mi",
+            "pho",
+            "game",
+            "xem phim",
+            "du lich",
+            "code",
+            "lap trinh",
+            "chung khoan",
+            "crypto",
+        ]
+        return any(contains_normalized_keyword(normalized, keyword) for keyword in off_topic_keywords)
+
+    def _has_medical_booking_intent(self, user_message: str, context: dict[str, Any]) -> bool:
+        if self._has_off_topic_anchor(user_message) and not self._has_real_symptom(user_message, context):
+            return False
+
+        if self._has_real_symptom(user_message, context):
+            return True
+
+        normalized = normalize_vietnamese(user_message)
+        medical_keywords = [
+            "dat lich",
+            "kham",
+            "bac si",
+            "chuyen khoa",
+            "khoa",
+            "trieu chung",
+            "vinmec",
+            "tu van vien",
+            "callback",
+            "ticket",
+            "lich hen",
+            "tai kham",
+            "xet nghiem",
+            "tiem chung",
+            "vacxin",
+            "vaccine",
+        ]
+        return any(contains_normalized_keyword(normalized, keyword) for keyword in medical_keywords)
+
+    def _is_contextual_medical_followup(self, user_message: str, history: list[dict[str, Any]]) -> bool:
+        if self._has_off_topic_anchor(user_message) and not self._has_real_symptom(user_message, {}):
+            return False
+
+        normalized = normalize_vietnamese(user_message)
+        followup_keywords = [
+            "hom nay",
+            "hom qua",
+            "toi qua",
+            "tu",
+            "muc do",
+            "nhe",
+            "vua",
+            "nang",
+            "tang dan",
+            "tung con",
+            "lan",
+            "kem",
+            "co so",
+            "times city",
+            "smart city",
+        ]
+        if not any(contains_normalized_keyword(normalized, keyword) for keyword in followup_keywords):
+            return False
+
+        recent_messages = history[-6:]
+        for item in recent_messages:
+            if item.get("role") != "user":
+                continue
+            content = str(item.get("content") or item.get("message") or "")
+            if content.strip() == user_message.strip():
+                continue
+            if self._has_medical_booking_intent(content, {}):
+                return True
+        return False
+
+    def _history_has_off_topic_anchor(self, history: list[dict[str, Any]]) -> bool:
+        for item in history[-6:]:
+            if item.get("role") == "user" and self._has_off_topic_anchor(
+                str(item.get("content") or item.get("message") or "")
+            ):
+                return True
+        return False
 
     def _fallback_next_action(self, react_state: dict[str, Any]) -> str:
         message = react_state["message"]
